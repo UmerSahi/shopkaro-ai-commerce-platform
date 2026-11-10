@@ -1,0 +1,161 @@
+{
+  "repeat_purchase_rate_pct": 31.33,
+  "total_buyers": 9496,
+  "repeat_buyers": 2975,
+  "avg_clv_pkr": 42715.11,
+  "churn_definition": "User with zero interaction or purchase events for > 90 consecutive days.",
+  "churn_rate_pct": 75.26,
+  "churned_users": 17754,
+  "cohort_periods": [
+    {
+      "cohort_month": "2024-01",
+      "period_number": 0,
+      "active_users": 384
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 1,
+      "active_users": 4
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 2,
+      "active_users": 7
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 3,
+      "active_users": 6
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 4,
+      "active_users": 2
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 5,
+      "active_users": 5
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 6,
+      "active_users": 8
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 7,
+      "active_users": 5
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 8,
+      "active_users": 4
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 9,
+      "active_users": 7
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 10,
+      "active_users": 4
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 11,
+      "active_users": 6
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 12,
+      "active_users": 8
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 13,
+      "active_users": 5
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 14,
+      "active_users": 8
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 15,
+      "active_users": 6
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 16,
+      "active_users": 6
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 17,
+      "active_users": 2
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 18,
+      "active_users": 9
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 19,
+      "active_users": 7
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 20,
+      "active_users": 2
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 21,
+      "active_users": 3
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 22,
+      "active_users": 6
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 23,
+      "active_users": 4
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 24,
+      "active_users": 2
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 25,
+      "active_users": 6
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 26,
+      "active_users": 5
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 27,
+      "active_users": 7
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 28,
+      "active_users": 8
+    },
+    {
+      "cohort_month": "2024-01",
+      "period_number": 29,
+      "active_users": 12
+    }
+  ]
+}

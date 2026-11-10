@@ -1,0 +1,12 @@
+{
+  "strategy": "Chronological (Time-Based) Split",
+  "rationale": "Prevents temporal data leakage and lookahead bias. Simulates true production deployment where tomorrow's clicks are predicted using yesterday's history.",
+  "train_range": "2024-01-01 to 2025-12-01",
+  "val_range": "2025-12-01 to 2026-04-29",
+  "test_range": "2026-04-29 to 2026-09-26",
+  "train_events_count": 187493,
+  "val_events_count": 40570,
+  "test_events_count": 40818,
+  "cold_start_users_in_test": 1184,
+  "cold_start_items_in_test": 2842
+}

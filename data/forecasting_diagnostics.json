@@ -1,0 +1,62 @@
+{
+  "adf_statistic": -5.395,
+  "adf_p_value": 3e-06,
+  "is_stationary": true,
+  "stationarity_interpretation": "Non-stationary time series (p < 0.05 indicates strong festival and trend components requiring differencing or feature lags).",
+  "weekly_seasonality_peak": "Friday evening through Sunday (PKR e-commerce weekend shopping behavior)",
+  "intermittent_demand_pct": 0.0,
+  "festival_uplifts": {
+    "11.11 Mega Sale 2024": {
+      "avg_daily_demand": 535.1,
+      "uplift_pct": 615.7
+    },
+    "11.11 Mega Sale 2025": {
+      "avg_daily_demand": 547.3,
+      "uplift_pct": 632.0
+    },
+    "Blessed Friday 2024": {
+      "avg_daily_demand": 216.35,
+      "uplift_pct": 189.4
+    },
+    "Blessed Friday 2025": {
+      "avg_daily_demand": 224.04,
+      "uplift_pct": 199.6
+    },
+    "Eid ul Adha 2024": {
+      "avg_daily_demand": 240.78,
+      "uplift_pct": 222.0
+    },
+    "Eid ul Adha 2025": {
+      "avg_daily_demand": 249.57,
+      "uplift_pct": 233.8
+    },
+    "Eid ul Fitr 2024": {
+      "avg_daily_demand": 327.17,
+      "uplift_pct": 337.6
+    },
+    "Eid ul Fitr 2025": {
+      "avg_daily_demand": 337.61,
+      "uplift_pct": 351.5
+    },
+    "Independence Day Azadi Sale 2024": {
+      "avg_daily_demand": 157.26,
+      "uplift_pct": 110.3
+    },
+    "Independence Day Azadi Sale 2025": {
+      "avg_daily_demand": 165.23,
+      "uplift_pct": 121.0
+    },
+    "Normal": {
+      "avg_daily_demand": 74.77,
+      "uplift_pct": 0.0
+    },
+    "Ramadan 2024": {
+      "avg_daily_demand": 178.56,
+      "uplift_pct": 138.8
+    },
+    "Ramadan 2025": {
+      "avg_daily_demand": 190.35,
+      "uplift_pct": 154.6
+    }
+  }
+}

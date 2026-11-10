@@ -1,0 +1,9 @@
+{
+  "test_query_count": 50,
+  "bm25_keyword_ndcg10": 0.8486,
+  "semantic_vector_ndcg10": 0.8884,
+  "hybrid_rrf_ndcg10": 0.9486,
+  "uplift_over_keyword_pct": 11.8,
+  "hybrid_beats_keyword_target": true,
+  "interpretation": "Hybrid search achieved 0.9486 NDCG@10 (11.8% improvement over standalone BM25 keyword search), successfully resolving Roman Urdu queries, category mapping, and budget constraints."
+}

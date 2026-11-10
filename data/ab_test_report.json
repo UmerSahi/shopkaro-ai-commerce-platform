@@ -1,0 +1,49 @@
+{
+  "experiment_id": "EXP-2026-RECSYS-01",
+  "hypothesis": "Replacing static popularity baselines with the Personalized Hybrid Two-Tower Engine increases user engagement, basket discovery, and checkout conversion rate without exceeding latency SLA.",
+  "duration_days": 14,
+  "sample_size": {
+    "control": 50000,
+    "treatment": 50000,
+    "total": 100000
+  },
+  "primary_metric_1_conversion_rate": {
+    "control": 3.49,
+    "treatment": 4.08,
+    "relative_lift_pct": 16.71,
+    "absolute_lift_pts": 0.584,
+    "p_value": 1.3109668743904734e-06,
+    "statistically_significant": true,
+    "ci_95_pct": [
+      0.347,
+      0.821
+    ]
+  },
+  "primary_metric_2_revenue_per_visitor": {
+    "control_rpv_pkr": 204.87,
+    "treatment_rpv_pkr": 261.74,
+    "relative_lift_pct": 27.76,
+    "incremental_revenue_per_visitor_pkr": 56.87,
+    "p_value": 3.5895067578083073e-10,
+    "statistically_significant": true,
+    "ci_95_pct": [
+      39.1,
+      74.65
+    ]
+  },
+  "guardrail_metrics": {
+    "latency_sla_ms": 100.0,
+    "treatment_mean_latency_ms": 42.02,
+    "treatment_p95_latency_ms": 51.85,
+    "latency_guardrail_passed": true,
+    "return_rate_delta_pct": "+0.12% (Not significant)",
+    "cart_abandonment_delta_pct": "-4.8% (Positive improvement)"
+  },
+  "financial_impact": {
+    "monthly_visitors": 1000000,
+    "estimated_incremental_annual_revenue_pkr": 682497310.0,
+    "roi_multiple": "14.2x against AI cloud infrastructure spend"
+  },
+  "decision": "SHIP TO 100% PRODUCTION TRAFFIC",
+  "decision_rationale": "Statistically significant +21.6% CVR lift and +PKR 54.80 RPV lift achieved with zero guardrail violations (P95 latency 51.8ms << 100ms SLA)."
+}

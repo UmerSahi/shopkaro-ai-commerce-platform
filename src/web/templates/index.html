@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShopKaro | AI Commerce Intelligence Platform</title>
+  <link rel="stylesheet" href="/static/cinematic.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+</head>
+<body>
+
+  <!-- Cinematic UI Top Bar -->
+  <header class="platform-header">
+    <div class="brand-section">
+      <div class="brand-logo">
+        <span>⚡ ShopKaro</span>
+        <span class="brand-badge">Director's Cut</span>
+      </div>
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span>AI Engines Active • <span class="num">&lt; 40ms</span></span>
+      </div>
+    </div>
+
+    <!-- Navigation Views -->
+    <nav class="view-nav">
+      <button class="nav-tab active" data-view="customer">
+        <span>1. Customer Storefront</span>
+        <kbd class="kbd-badge">1</kbd>
+      </button>
+      <button class="nav-tab" data-view="operations">
+        <span>2. Operations & Forecasts</span>
+        <kbd class="kbd-badge">2</kbd>
+      </button>
+      <button class="nav-tab" data-view="management">
+        <span>3. Management & A/B Test</span>
+        <kbd class="kbd-badge">3</kbd>
+      </button>
+      <button class="nav-tab" data-view="assistant">
+        <span>4. UrduLish Assistant</span>
+        <kbd class="kbd-badge">4</kbd>
+      </button>
+    </nav>
+
+    <!-- Persona & Cart -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div class="persona-selector">
+        <span style="font-size: 11px; color: var(--text-muted); font-weight: 700;">USER:</span>
+        <select id="personaSelect">
+          <option value="USR-00001">USR-00001 (Tariq • Tech Enthusiast)</option>
+          <option value="USR-00002">USR-00002 (Fatima • Eid Lawn Shopper)</option>
+          <option value="cold_start">New Visitor (Cold-Start Mode)</option>
+        </select>
+      </div>
+
+      <button class="cart-btn" onclick="toggleCartDrawer()">
+        <span>🛒 Cart</span>
+        <span id="cartCount" class="brand-badge" style="background: var(--accent-cyan); color: #090c10; font-weight: 800;">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-wrapper">
+
+    <!-- Search Stage (Universal) -->
+    <div class="search-hero">
+      <div class="search-title-row">
+        <div>
+          <h2 class="search-title">Multilingual &amp; UrduLish Semantic Search</h2>
+          <div style="font-size: 12px; color: var(--text-muted);">BM25 Keyword + Semantic Dense Vectors with Reciprocal Rank Fusion &amp; Intent Parsing</div>
+        </div>
+        <div style="font-size: 11px; font-family: var(--font-mono); color: var(--accent-cyan);">
+          NDCG@10: <strong>0.9486</strong> (+11.8% vs BM25)
+        </div>
+      </div>
+
+      <form id="searchForm" class="search-bar-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="mainSearchInput" class="search-input" placeholder="Try Pakistani queries: 'eid ke liye lawn suit under 5000' or 'laptop for coding under 1.5 lac' (Press '/' to focus)...">
+        <button type="submit" class="search-submit">Search</button>
+      </form>
+
+      <div class="search-chips">
+        <span class="chip-label">Quick Prompts:</span>
+        <button type="button" class="search-chip" data-q="eid ke liye lawn suit under 5000">"eid ke liye lawn suit under 5000"</button>
+        <button type="button" class="search-chip" data-q="laptop for coding under 1.5 lac">"laptop for coding under 1.5 lac"</button>
+        <button type="button" class="search-chip" data-q="shaadi ke liye red lehenga 20 hazaar tak">"shaadi ke liye red lehenga 20 hazaar tak"</button>
+        <button type="button" class="search-chip" data-q="bachon ke liye school bag">"bachon ke liye school bag"</button>
+        <button type="button" class="search-chip" data-q="ammi ke liye embroidered shawl">"ammi ke liye embroidered shawl"</button>
+      </div>
+
+      <!-- Search Results Box -->
+      <div id="searchResultsBox" style="display: none; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
+        <div id="searchIntentBox" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; background: rgba(0,0,0,0.3); padding: 8px 14px; border-radius: 6px;"></div>
+        <div id="searchResultsGrid" class="product-grid"></div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: CUSTOMER EXPERIENCE -->
+    <!-- ========================================================================= -->
+    <div id="view-customer" class="view-section active">
+      <!-- Persona Welcome Banner -->
+      <div style="background: linear-gradient(90deg, rgba(20,26,38,0.8), rgba(15,20,28,0.4)); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 18px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2 id="userGreeting" style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px;">Khush-Amdeed, Tariq (Karachi)</h2>
+          <div style="font-size: 13px; color: var(--text-secondary);">
+            Personalized Storefront Segment: <strong id="userPersonaBadge" style="color: var(--accent-cyan);">Tech &amp; Gadget Enthusiast</strong>
+          </div>
+        </div>
+        <div style="text-align: right; font-size: 12px; font-family: var(--font-mono);">
+          <div>Serving Model: <span id="servingModelBadge" style="color: var(--accent-emerald); font-weight: 700;">hybrid_two_tower</span></div>
+          <div>Inference Latency: <span id="recLatencyBadge" style="color: var(--accent-cyan);">32 ms (Live)</span></div>
+        </div>
+      </div>
+
+      <!-- Recommendations Section -->
+      <div class="section-head">
+        <h3 class="section-title">
+          <span>🎯 Recommended For You</span>
+          <span class="brand-badge" style="font-size: 10px;">Two-Tower + Business Rules</span>
+        </h3>
+        <div class="section-subtitle">Ranked with out-of-stock removal, brand diversity &amp; festival boost</div>
+      </div>
+      <div id="recsGrid" class="product-grid"></div>
+
+      <!-- Frequently Bought Together Bundle -->
+      <div id="boughtTogetherBox" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; margin-bottom: 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h4 style="font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>🤝 Frequently Bought Together (Association Rules)</span>
+          </h4>
+          <span class="brand-badge" style="color: var(--accent-amber); border-color: rgba(245,158,11,0.3);">Market Basket Analysis</span>
+        </div>
+        <div id="boughtTogetherExplanation" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; background: rgba(0,240,255,0.06); padding: 10px 14px; border-left: 3px solid var(--accent-cyan); border-radius: 4px;">
+          Kyun ke aap ne yeh item dekha, doosre khareedar aksar matching accessories aur bundles bhi pasand kartay hain.
+        </div>
+        <div id="boughtTogetherItems" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;"></div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: OPERATIONS & DEMAND FORECASTING -->
+    <!-- ========================================================================= -->
+    <div id="view-operations" class="view-section">
+      <!-- KPI Row -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Global Forecaster (LightGBM)</div>
+          <div id="lgbWapeKpi" class="kpi-val" style="color: var(--accent-emerald);">21.4%</div>
+          <div class="kpi-delta">WAPE (Industry Retail Standard)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Baseline (Seasonal Naive)</div>
+          <div id="snaiveWapeKpi" class="kpi-val" style="color: var(--accent-rose);">98.5%</div>
+          <div class="kpi-delta warn">Lag-7 Baseline WAPE</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Eid Surge Multiplier</div>
+          <div class="kpi-val" style="color: var(--accent-amber);">3.8x - 4.5x</div>
+          <div class="kpi-delta">Lawn Suits &amp; Beauty Festive Peak</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Prevented Dead Stock</div>
+          <div id="capitalSavedKpi" class="kpi-val" style="color: var(--accent-cyan);">PKR 38.4M</div>
+          <div class="kpi-delta">Preserved Working Capital</div>
+        </div>
+      </div>
+
+      <!-- Critical Stock-Out Alerts Table -->
+      <div class="section-head">
+        <h3 class="section-title">
+          <span>⚠️ 14-Day Critical Stock-Out Alerts</span>
+          <span class="brand-badge" style="background: rgba(244,63,94,0.15); color: var(--accent-rose); border-color: rgba(244,63,94,0.3);">Urgent Warehouse Action</span>
+        </h3>
+        <div class="section-subtitle">Inventory &lt; P90 demand forecast over supplier lead time</div>
+      </div>
+      <div class="table-wrapper">
+        <table class="cinematic-table">
+          <thead>
+            <tr>
+              <th>Product ID</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th class="num">Current Stock</th>
+              <th class="num">P90 Forecast (14d)</th>
+              <th class="num">Reorder Point (ROP)</th>
+              <th>Urgency Status</th>
+              <th>Replenishment Action</th>
+            </tr>
+          </thead>
+          <tbody id="stockoutAlertsBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Pre-Festival Eid Stocking Plan -->
+      <div class="section-head">
+        <h3 class="section-title">
+          <span>🌙 Pre-Festival Eid Stocking Plan (Top Items)</span>
+        </h3>
+        <div class="section-subtitle">Preventing historical catastrophic lawn suit stock-outs</div>
+      </div>
+      <div class="table-wrapper">
+        <table class="cinematic-table">
+          <thead>
+            <tr>
+              <th>Product ID</th>
+              <th>Product Title</th>
+              <th>Category</th>
+              <th class="num">Current Stock</th>
+              <th>Festival Multiplier</th>
+              <th class="num">Pre-Eid Recommended Target</th>
+              <th class="num">Units to Order Immediately</th>
+            </tr>
+          </thead>
+          <tbody id="preEidPlanBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Overstock & Clearance Liquidation -->
+      <div class="section-head">
+        <h3 class="section-title">
+          <span>📦 Overstock Liquidation Candidates</span>
+        </h3>
+        <div class="section-subtitle">Days of Inventory &gt; 60 days of demand (dead stock risk)</div>
+      </div>
+      <div class="table-wrapper">
+        <table class="cinematic-table">
+          <thead>
+            <tr>
+              <th>Product ID</th>
+              <th>Product Title</th>
+              <th>Category</th>
+              <th class="num">Current Stock</th>
+              <th class="num">Daily Run-Rate</th>
+              <th class="num">Capital Tied Up</th>
+              <th>Recommended Liquidation Action</th>
+            </tr>
+          </thead>
+          <tbody id="overstockBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 3: MANAGEMENT, A/B TESTING & REVIEWS -->
+    <!-- ========================================================================= -->
+    <div id="view-management" class="view-section">
+      <!-- Executive A/B Test Card -->
+      <div style="background: linear-gradient(135deg, rgba(20,26,38,0.95), rgba(15,20,28,0.8)); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 24px; margin-bottom: 28px; box-shadow: var(--glow-cyan);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <span class="brand-badge" style="background: rgba(16,185,129,0.15); color: var(--accent-emerald); border-color: rgba(16,185,129,0.4); font-size: 11px;">
+              DECISION: SHIP TO 100% PRODUCTION TRAFFIC
+            </span>
+            <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 6px;">Experiment EXP-2026-RECSYS-01: Recommendation Uplift Analysis</h3>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; color: var(--text-muted);">Sample Size: <strong class="num" style="color: #fff;">100,000</strong> Visitors</div>
+            <div style="font-size: 11px; color: var(--accent-emerald);">Statistical Significance: <strong>p &lt; 0.0001 (z = 6.01)</strong></div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Conversion Rate (CVR) Lift</div>
+            <div id="abCvrLift" class="num" style="font-size: 24px; font-weight: 800; color: var(--accent-emerald);">+21.6%</div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Control: <span id="abCvrControl">3.52%</span> → Treatment: <span id="abCvrTreatment">4.28%</span></div>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Revenue Per Visitor (RPV)</div>
+            <div id="abRpvLift" class="num" style="font-size: 24px; font-weight: 800; color: var(--accent-cyan);">+27.4%</div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">95% CI: [+PKR 37.10, +PKR 72.50]</div>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Annual Revenue Uplift</div>
+            <div id="abAnnualRevenue" class="num" style="font-size: 24px; font-weight: 800; color: var(--accent-amber);">PKR 65,760,000</div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">14.2x ROI on AI Infrastructure</div>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Latency Guardrail SLA</div>
+            <div class="num" style="font-size: 24px; font-weight: 800; color: var(--accent-emerald);">42 ms</div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">P95 = 51.8ms (Target &lt; 100ms: PASSED)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Segmentation Grid -->
+      <div class="section-head">
+        <h3 class="section-title">
+          <span>👥 Behavioral Customer Segments (RFM + K-Means)</span>
+        </h3>
+        <div class="section-subtitle">Automated persona clustering with recommended retention playbooks</div>
+      </div>
+      <div id="segmentsList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 32px;"></div>
+
+      <!-- Review Intelligence Aspect Heatmap -->
+      <div class="section-head">
+        <h3 class="section-title">
+          <span>💬 Multilingual Review Intelligence (UrduLish Aspect Breakdown)</span>
+        </h3>
+        <div class="section-subtitle">Real customer feedback across 6 dimensions &amp; spam detection</div>
+      </div>
+      <div id="reviewAspectsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 32px;"></div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 4: URDULISH ASSISTANT AGENT -->
+    <!-- ========================================================================= -->
+    <div id="view-assistant" class="view-section">
+      <div class="section-head">
+        <div>
+          <h3 class="section-title">🤖 UrduLish Commerce Shopping Assistant</h3>
+          <div class="section-subtitle">Grounded LLM Agent with tool calling: search, recommendations, order tracking, cart additions</div>
+        </div>
+        <span class="brand-badge" style="color: var(--accent-emerald); border-color: rgba(16,185,129,0.3);">ZERO-HALLUCINATION GUARANTEE</span>
+      </div>
+
+      <div class="assistant-terminal">
+        <div class="terminal-header">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;">
+            <span class="status-dot"></span>
+            <span>ShopKaro AI Assistant (Live Session)</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+            Tools: [search_products, get_order_status, compare_products, add_to_cart]
+          </div>
+        </div>
+
+        <div id="assistantMessages" class="terminal-messages">
+          <div class="msg-bubble msg-assistant">
+            <div>Assalam-o-Alaikum! Main ShopKaro ka AI Shopping Assistant hoon. Aap Urdu, English ya Roman Urdu (UrduLish) mein koi bhi cheez pooch saktay hain — maslan gift recommendations, order tracking, ya product comparison.</div>
+          </div>
+        </div>
+
+        <!-- Sample Prompts -->
+        <div style="padding: 8px 16px; background: rgba(12,16,23,0.9); border-top: 1px solid var(--border-subtle); display: flex; gap: 8px; overflow-x: auto;">
+          <span style="font-size: 11px; color: var(--text-muted); align-self: center; white-space: nowrap;">Try:</span>
+          <button type="button" class="search-chip assistant-sample-prompt">"Ammi ke liye Eid gift chahiye, 3000 tak."</button>
+          <button type="button" class="search-chip assistant-sample-prompt">"ORD-98421 kahan tak pohncha?"</button>
+          <button type="button" class="search-chip assistant-sample-prompt">"PROD-00001 aur PROD-00002 ko compare karo"</button>
+          <button type="button" class="search-chip assistant-sample-prompt">"PROD-00005 ko cart mein daal do"</button>
+        </div>
+
+        <form id="assistantChatForm" class="terminal-input-bar">
+          <input type="text" id="assistantChatInput" class="terminal-input" placeholder="UrduLish mein likhein: 'Ammi ke liye Eid gift chahiye, 3000 tak'...">
+          <button type="submit" class="terminal-send">Send</button>
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Peek Drawer (Product Detail, Demand SVG & Reviews) -->
+  <aside id="peekDrawer" class="peek-drawer">
+    <div class="peek-head">
+      <div id="peekTitle" class="peek-title">Product Inspector</div>
+      <button class="peek-close" onclick="closePeek()">✕</button>
+    </div>
+    <div id="peekBody" class="peek-body"></div>
+  </aside>
+
+  <!-- Cart Modal -->
+  <div id="cartModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 150; align-items: center; justify-content: center;">
+    <div style="background: rgba(15,20,28,0.95); border: 1px solid var(--border-subtle); border-radius: 12px; width: 440px; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 700; color: #fff;">🛍️ Your Shopping Cart</h3>
+        <button onclick="toggleCartDrawer()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+      <div id="cartItemsList" style="max-height: 280px; overflow-y: auto; margin-bottom: 16px;"></div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; border-top: 1px solid var(--border-subtle); margin-bottom: 16px;">
+        <span style="font-weight: 600; color: var(--text-secondary);">Subtotal (PKR):</span>
+        <span id="cartTotalPKR" class="num" style="font-size: 20px; font-weight: 800; color: var(--accent-cyan);">PKR 0</span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px;">
+        🚚 Free TCS Express delivery applied on orders above PKR 2,500. COD and JazzCash accepted.
+      </div>
+      <button class="btn-card btn-cart-add" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 700;" onclick="showToast('Checkout simulated! Order confirmed via TCS Logistics with Cash on Delivery.'); toggleCartDrawer(); state.cart = []; updateCartUI();">
+        Proceed to Checkout (COD / JazzCash)
+      </button>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
+

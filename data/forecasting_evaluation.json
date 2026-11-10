@@ -1,0 +1,55 @@
+{
+  "folds": [
+    {
+      "fold": 1,
+      "cutoff_date": "2025-11-05",
+      "horizon_end": "2025-11-18",
+      "wape_lgb": 20.84,
+      "wape_snaive": 82.02,
+      "wape_naive": 36.81,
+      "mae_lgb": 71.94,
+      "rmse_lgb": 128.83,
+      "smape_lgb": 26.16
+    },
+    {
+      "fold": 2,
+      "cutoff_date": "2025-11-19",
+      "horizon_end": "2025-12-02",
+      "wape_lgb": 26.36,
+      "wape_snaive": 207.41,
+      "wape_naive": 35.6,
+      "mae_lgb": 33.52,
+      "rmse_lgb": 61.4,
+      "smape_lgb": 30.89
+    },
+    {
+      "fold": 3,
+      "cutoff_date": "2025-12-03",
+      "horizon_end": "2025-12-16",
+      "wape_lgb": 21.8,
+      "wape_snaive": 83.57,
+      "wape_naive": 24.98,
+      "mae_lgb": 16.28,
+      "rmse_lgb": 24.35,
+      "smape_lgb": 25.65
+    },
+    {
+      "fold": 4,
+      "cutoff_date": "2025-12-17",
+      "horizon_end": "2025-12-30",
+      "wape_lgb": 16.74,
+      "wape_snaive": 21.04,
+      "wape_naive": 24.98,
+      "mae_lgb": 12.51,
+      "rmse_lgb": 19.3,
+      "smape_lgb": 19.38
+    }
+  ],
+  "avg_wape_lgb_pct": 21.43,
+  "avg_wape_seasonal_naive_pct": 98.51,
+  "wape_improvement_points": 77.1,
+  "beats_seasonal_naive_target": true,
+  "fast_movers_wape_pct": 15.27,
+  "slow_movers_wape_pct": 18.38,
+  "metric_explanation": "MAPE breaks for low-volume items due to division by zero or near-zero sales; WAPE is retail industry standard because it weights errors proportionally by true sales volume."
+}

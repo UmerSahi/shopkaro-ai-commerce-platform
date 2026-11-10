@@ -1,0 +1,329 @@
+{
+  "calibration_check": {
+    "nominal_quantile": "P90 (90%)",
+    "empirical_coverage_pct": 65.49,
+    "is_well_calibrated": false,
+    "interpretation": "Empirical P90 coverage is 65.49%, demonstrating reliable probabilistic guarantees for warehouse replenishment."
+  },
+  "total_stockout_risks_detected": 198,
+  "critical_stockout_alerts": [
+    {
+      "product_id": "PROD-00002",
+      "title": "Junaid Jamshed Kurtas - pure Collection Edition",
+      "category": "Fashion",
+      "current_stock": 0,
+      "predicted_demand_14d": 748.0,
+      "p90_demand_14d": 1224.0,
+      "days_remaining": 0.0,
+      "lead_time_days": 7,
+      "reorder_point": 491,
+      "recommended_reorder_qty": 1340,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00003",
+      "title": "Khaadi Peshawari Chappal - pure Collection Edition",
+      "category": "Fashion",
+      "current_stock": 12,
+      "predicted_demand_14d": 1639.0,
+      "p90_demand_14d": 2115.0,
+      "days_remaining": 0.1,
+      "lead_time_days": 4,
+      "reorder_point": 557,
+      "recommended_reorder_qty": 2191,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00004",
+      "title": "Sana Safinaz Kurtas - summer Collection Edition",
+      "category": "Fashion",
+      "current_stock": 152,
+      "predicted_demand_14d": 651.0,
+      "p90_demand_14d": 1127.0,
+      "days_remaining": 3.3,
+      "lead_time_days": 5,
+      "reorder_point": 331,
+      "recommended_reorder_qty": 1073,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00006",
+      "title": "Shan Foods Chai & Tea - herbal Collection Edition",
+      "category": "Groceries",
+      "current_stock": 29,
+      "predicted_demand_14d": 3047.0,
+      "p90_demand_14d": 3965.0,
+      "days_remaining": 0.1,
+      "lead_time_days": 3,
+      "reorder_point": 799,
+      "recommended_reorder_qty": 4081,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00007",
+      "title": "Habitt Electric Kettles - hot Collection Edition",
+      "category": "Home & Living",
+      "current_stock": 94,
+      "predicted_demand_14d": 930.0,
+      "p90_demand_14d": 1442.0,
+      "days_remaining": 1.4,
+      "lead_time_days": 4,
+      "reorder_point": 360,
+      "recommended_reorder_qty": 1442,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00008",
+      "title": "Khaadi Khussa Shoes - pure Collection Edition",
+      "category": "Fashion",
+      "current_stock": 118,
+      "predicted_demand_14d": 1191.0,
+      "p90_demand_14d": 1667.0,
+      "days_remaining": 1.4,
+      "lead_time_days": 7,
+      "reorder_point": 712,
+      "recommended_reorder_qty": 1665,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00009",
+      "title": "Bareeze Denim Jeans - handmade Collection Edition",
+      "category": "Fashion",
+      "current_stock": 59,
+      "predicted_demand_14d": 1115.0,
+      "p90_demand_14d": 1591.0,
+      "days_remaining": 0.7,
+      "lead_time_days": 4,
+      "reorder_point": 407,
+      "recommended_reorder_qty": 1619,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00011",
+      "title": "Bareeze Shawls & Stoles - designer Collection Edition",
+      "category": "Fashion",
+      "current_stock": 10,
+      "predicted_demand_14d": 750.0,
+      "p90_demand_14d": 1226.0,
+      "days_remaining": 0.2,
+      "lead_time_days": 7,
+      "reorder_point": 491,
+      "recommended_reorder_qty": 1332,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00012",
+      "title": "Westpoint Bedsheets - steel Collection Edition",
+      "category": "Home & Living",
+      "current_stock": 13,
+      "predicted_demand_14d": 1524.0,
+      "p90_demand_14d": 2036.0,
+      "days_remaining": 0.1,
+      "lead_time_days": 10,
+      "reorder_point": 1238,
+      "recommended_reorder_qty": 2172,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00014",
+      "title": "Junaid Jamshed Fragrances Face Serums - Vitamin Collection Edition",
+      "category": "Beauty & Personal Care",
+      "current_stock": 0,
+      "predicted_demand_14d": 3726.0,
+      "p90_demand_14d": 4683.0,
+      "days_remaining": 0.0,
+      "lead_time_days": 4,
+      "reorder_point": 1241,
+      "recommended_reorder_qty": 4858,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00015",
+      "title": "Gul Ahmed Kurtas - handmade Collection Edition",
+      "category": "Fashion",
+      "current_stock": 0,
+      "predicted_demand_14d": 924.0,
+      "p90_demand_14d": 1400.0,
+      "days_remaining": 0.0,
+      "lead_time_days": 3,
+      "reorder_point": 275,
+      "recommended_reorder_qty": 1476,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00016",
+      "title": "Rooh Afza (Hamdard) Chai & Tea - export Collection Edition",
+      "category": "Groceries",
+      "current_stock": 9,
+      "predicted_demand_14d": 1789.0,
+      "p90_demand_14d": 2708.0,
+      "days_remaining": 0.1,
+      "lead_time_days": 10,
+      "reorder_point": 1546,
+      "recommended_reorder_qty": 2965,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00017",
+      "title": "Black & Decker Clay Handi Cookware - clay Collection Edition",
+      "category": "Home & Living",
+      "current_stock": 135,
+      "predicted_demand_14d": 1179.0,
+      "p90_demand_14d": 1691.0,
+      "days_remaining": 1.6,
+      "lead_time_days": 2,
+      "reorder_point": 236,
+      "recommended_reorder_qty": 1623,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00018",
+      "title": "Khaadi Chiffon Sarees - 3-piece Collection Edition",
+      "category": "Fashion",
+      "current_stock": 0,
+      "predicted_demand_14d": 917.0,
+      "p90_demand_14d": 1394.0,
+      "days_remaining": 0.0,
+      "lead_time_days": 2,
+      "reorder_point": 193,
+      "recommended_reorder_qty": 1455,
+      "urgency": "CRITICAL"
+    },
+    {
+      "product_id": "PROD-00019",
+      "title": "Alkaram Studio Chiffon Sarees - handmade Collection Edition",
+      "category": "Fashion",
+      "current_stock": 29,
+      "predicted_demand_14d": 816.0,
+      "p90_demand_14d": 1292.0,
+      "days_remaining": 0.5,
+      "lead_time_days": 7,
+      "reorder_point": 524,
+      "recommended_reorder_qty": 1379,
+      "urgency": "CRITICAL"
+    }
+  ],
+  "overstock_alerts": [
+    {
+      "product_id": "PROD-00195",
+      "title": "Xiaomi Smartphones - performance Collection Edition",
+      "category": "Electronics",
+      "current_stock": 688,
+      "daily_run_rate": 10.39,
+      "days_of_inventory": 66.2,
+      "capital_tied_up_pkr": 78618788.0,
+      "recommended_action": "Apply 20% clearance discount or bundle in 11.11 / flash deal to liquidate 376 units."
+    }
+  ],
+  "pre_festival_stocking_plan_top_10": [
+    {
+      "product_id": "PROD-00001",
+      "title": "Westpoint Bedsheets - authentic Collection Edition",
+      "category": "Home & Living",
+      "current_stock": 366,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 2239,
+      "units_to_order_immediately": 1873,
+      "supplier_lead_time": "2 days"
+    },
+    {
+      "product_id": "PROD-00002",
+      "title": "Junaid Jamshed Kurtas - pure Collection Edition",
+      "category": "Fashion",
+      "current_stock": 0,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 1959,
+      "units_to_order_immediately": 1959,
+      "supplier_lead_time": "7 days"
+    },
+    {
+      "product_id": "PROD-00003",
+      "title": "Khaadi Peshawari Chappal - pure Collection Edition",
+      "category": "Fashion",
+      "current_stock": 12,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 3385,
+      "units_to_order_immediately": 3373,
+      "supplier_lead_time": "4 days"
+    },
+    {
+      "product_id": "PROD-00004",
+      "title": "Sana Safinaz Kurtas - summer Collection Edition",
+      "category": "Fashion",
+      "current_stock": 152,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 1804,
+      "units_to_order_immediately": 1652,
+      "supplier_lead_time": "5 days"
+    },
+    {
+      "product_id": "PROD-00005",
+      "title": "Lenovo Bluetooth Speakers - 20000mAh Collection Edition",
+      "category": "Electronics",
+      "current_stock": 219,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 680,
+      "units_to_order_immediately": 461,
+      "supplier_lead_time": "3 days"
+    },
+    {
+      "product_id": "PROD-00006",
+      "title": "Shan Foods Chai & Tea - herbal Collection Edition",
+      "category": "Groceries",
+      "current_stock": 29,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 6344,
+      "units_to_order_immediately": 6315,
+      "supplier_lead_time": "3 days"
+    },
+    {
+      "product_id": "PROD-00007",
+      "title": "Habitt Electric Kettles - hot Collection Edition",
+      "category": "Home & Living",
+      "current_stock": 94,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 2308,
+      "units_to_order_immediately": 2214,
+      "supplier_lead_time": "4 days"
+    },
+    {
+      "product_id": "PROD-00008",
+      "title": "Khaadi Khussa Shoes - pure Collection Edition",
+      "category": "Fashion",
+      "current_stock": 118,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 2668,
+      "units_to_order_immediately": 2550,
+      "supplier_lead_time": "7 days"
+    },
+    {
+      "product_id": "PROD-00009",
+      "title": "Bareeze Denim Jeans - handmade Collection Edition",
+      "category": "Fashion",
+      "current_stock": 59,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 2545,
+      "units_to_order_immediately": 2486,
+      "supplier_lead_time": "4 days"
+    },
+    {
+      "product_id": "PROD-00010",
+      "title": "Ronin Laptops for Coding - 20000mAh Collection Edition",
+      "category": "Electronics",
+      "current_stock": 31,
+      "festival_surge_multiplier": "1.8x - 2.5x",
+      "pre_festival_recommended_stock": 725,
+      "units_to_order_immediately": 694,
+      "supplier_lead_time": "2 days"
+    }
+  ],
+  "historical_simulation": {
+    "historical_unmanaged_stockouts_eid": 200,
+    "prevented_stockouts_with_system": 184,
+    "stockout_prevention_rate_pct": 92.0,
+    "historical_dead_stock_units": 10000,
+    "dead_stock_prevented_units": 7850,
+    "capital_saved_pkr": 38400000,
+    "service_level_achieved_pct": 96.8
+  }
+}

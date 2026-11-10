@@ -1,0 +1,240 @@
+{
+  "funnel": {
+    "views": 216179,
+    "add_to_cart": 39036,
+    "purchases": 13666,
+    "view_to_cart_pct": 18.06,
+    "cart_to_purchase_pct": 35.01,
+    "overall_funnel_conversion_pct": 6.32,
+    "business_insight": "High intent drop-off between cart (18.06% of views) and purchase (35.01% of carts), pointing to checkout friction and shipping surprises at COD stage."
+  },
+  "top_categories": [
+    {
+      "category": "Electronics",
+      "event_count": 68792,
+      "total_revenue": 287620486.0
+    },
+    {
+      "category": "Fashion",
+      "event_count": 93714,
+      "total_revenue": 69050197.0
+    },
+    {
+      "category": "Home & Living",
+      "event_count": 39604,
+      "total_revenue": 33538039.0
+    },
+    {
+      "category": "Beauty & Personal Care",
+      "event_count": 40137,
+      "total_revenue": 10017605.0
+    },
+    {
+      "category": "Groceries",
+      "event_count": 26634,
+      "total_revenue": 5396396.0
+    }
+  ],
+  "top_brands": [
+    {
+      "brand": "Sapphire",
+      "category": "Fashion",
+      "purchase_count": 526,
+      "brand_revenue": 7289429.0
+    },
+    {
+      "brand": "Bareeze",
+      "category": "Fashion",
+      "purchase_count": 502,
+      "brand_revenue": 6810136.0
+    },
+    {
+      "brand": "Outfitters",
+      "category": "Fashion",
+      "purchase_count": 496,
+      "brand_revenue": 7228120.0
+    },
+    {
+      "brand": "Khaadi",
+      "category": "Fashion",
+      "purchase_count": 493,
+      "brand_revenue": 6906331.0
+    },
+    {
+      "brand": "Sana Safinaz",
+      "category": "Fashion",
+      "purchase_count": 489,
+      "brand_revenue": 6863548.0
+    },
+    {
+      "brand": "Junaid Jamshed",
+      "category": "Fashion",
+      "purchase_count": 488,
+      "brand_revenue": 6831550.0
+    },
+    {
+      "brand": "Nishat Linen",
+      "category": "Fashion",
+      "purchase_count": 486,
+      "brand_revenue": 6819270.0
+    },
+    {
+      "brand": "Alkaram Studio",
+      "category": "Fashion",
+      "purchase_count": 459,
+      "brand_revenue": 7139453.0
+    },
+    {
+      "brand": "Gul Ahmed",
+      "category": "Fashion",
+      "purchase_count": 450,
+      "brand_revenue": 7003658.0
+    },
+    {
+      "brand": "Charcoal",
+      "category": "Fashion",
+      "purchase_count": 431,
+      "brand_revenue": 6158702.0
+    }
+  ],
+  "pareto_long_tail": {
+    "pct_products_driving_80pct_sales": 5.45,
+    "product_count_driving_80pct": 2723,
+    "business_insight": "The top 5.45% of catalog items drive 80% of ShopKaro's revenue; long-tail catalog discovery requires personalized hybrid recommendation to unlock dormant inventory."
+  },
+  "sales_by_dow": [
+    {
+      "dow": "0",
+      "event_count": 1900
+    },
+    {
+      "dow": "1",
+      "event_count": 1926
+    },
+    {
+      "dow": "2",
+      "event_count": 2028
+    },
+    {
+      "dow": "3",
+      "event_count": 1896
+    },
+    {
+      "dow": "4",
+      "event_count": 1909
+    },
+    {
+      "dow": "5",
+      "event_count": 1973
+    },
+    {
+      "dow": "6",
+      "event_count": 2034
+    }
+  ],
+  "sales_by_hour": [
+    {
+      "hour": "00",
+      "event_count": 106
+    },
+    {
+      "hour": "01",
+      "event_count": 68
+    },
+    {
+      "hour": "02",
+      "event_count": 79
+    },
+    {
+      "hour": "03",
+      "event_count": 66
+    },
+    {
+      "hour": "04",
+      "event_count": 67
+    },
+    {
+      "hour": "05",
+      "event_count": 129
+    },
+    {
+      "hour": "06",
+      "event_count": 171
+    },
+    {
+      "hour": "07",
+      "event_count": 313
+    },
+    {
+      "hour": "08",
+      "event_count": 434
+    },
+    {
+      "hour": "09",
+      "event_count": 660
+    },
+    {
+      "hour": "10",
+      "event_count": 738
+    },
+    {
+      "hour": "11",
+      "event_count": 786
+    },
+    {
+      "hour": "12",
+      "event_count": 709
+    },
+    {
+      "hour": "13",
+      "event_count": 677
+    },
+    {
+      "hour": "14",
+      "event_count": 697
+    },
+    {
+      "hour": "15",
+      "event_count": 720
+    },
+    {
+      "hour": "16",
+      "event_count": 875
+    },
+    {
+      "hour": "17",
+      "event_count": 914
+    },
+    {
+      "hour": "18",
+      "event_count": 1073
+    },
+    {
+      "hour": "19",
+      "event_count": 1168
+    },
+    {
+      "hour": "20",
+      "event_count": 1139
+    },
+    {
+      "hour": "21",
+      "event_count": 996
+    },
+    {
+      "hour": "22",
+      "event_count": 687
+    },
+    {
+      "hour": "23",
+      "event_count": 394
+    }
+  ],
+  "sparsity": {
+    "n_users": 23591,
+    "n_items": 36362,
+    "n_interactions": 268881,
+    "matrix_sparsity_pct": 99.9687,
+    "business_insight": "User-Item interaction matrix is 99.9687% sparse; pure collaborative filtering alone suffers cold-start, demanding hybrid content embeddings and graph re-ranking."
+  }
+}

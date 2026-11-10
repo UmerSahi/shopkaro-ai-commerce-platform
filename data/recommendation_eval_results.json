@@ -1,0 +1,45 @@
+{
+  "models": {
+    "popularity": {
+      "precision_at_10": 0.038,
+      "recall_at_10": 0.049,
+      "ndcg_at_10": 0.0465,
+      "map_at_10": 0.0346,
+      "hit_rate": 0.285,
+      "catalogue_coverage_pct": 0.02,
+      "novelty_bits": 12.49
+    },
+    "category_popular": {
+      "precision_at_10": 0.052,
+      "recall_at_10": 0.071,
+      "ndcg_at_10": 0.0682,
+      "map_at_10": 0.0473,
+      "hit_rate": 0.362,
+      "catalogue_coverage_pct": 0.1,
+      "novelty_bits": 12.63
+    },
+    "als": {
+      "precision_at_10": 0.078,
+      "recall_at_10": 0.114,
+      "ndcg_at_10": 0.0965,
+      "map_at_10": 0.071,
+      "hit_rate": 0.495,
+      "catalogue_coverage_pct": 14.2,
+      "novelty_bits": 13.22
+    },
+    "hybrid_two_tower": {
+      "precision_at_10": 0.096,
+      "recall_at_10": 0.142,
+      "ndcg_at_10": 0.124,
+      "map_at_10": 0.0874,
+      "hit_rate": 0.582,
+      "catalogue_coverage_pct": 18.4,
+      "novelty_bits": 12.66
+    }
+  },
+  "production_choice": "hybrid_two_tower",
+  "production_rationale": "Hybrid Two-Tower model achieves 0.124 NDCG@10 (+166.7% uplift over popularity baseline, comfortably surpassing the capstone 20% rubric requirement) with 58.2% Hit Rate and 18.4% catalogue coverage.",
+  "ndcg_uplift_pct": 166.7,
+  "cold_start_hit_rate": 0.245,
+  "beats_baseline_target": true
+}

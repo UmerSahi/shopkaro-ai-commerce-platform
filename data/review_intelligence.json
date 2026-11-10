@@ -1,0 +1,212 @@
+{
+  "weekly_report": {
+    "report_week": "2026-W45 (Pre-Eid Preparation Cycle)",
+    "total_reviews_analyzed": 6500,
+    "overall_sentiment_split": {
+      "positive": 3688,
+      "negative": 2232,
+      "neutral": 580
+    },
+    "spam_detected_count": 274,
+    "spam_rate_pct": 4.22,
+    "aspect_breakdown": {
+      "quality": {
+        "mention_count": 3469,
+        "positive_sentiment_pct": 74.8,
+        "negative_sentiment_pct": 25.2
+      },
+      "delivery": {
+        "mention_count": 1433,
+        "positive_sentiment_pct": 0.0,
+        "negative_sentiment_pct": 59.5
+      },
+      "seller": {
+        "mention_count": 1113,
+        "positive_sentiment_pct": 24.3,
+        "negative_sentiment_pct": 51.0
+      },
+      "price": {
+        "mention_count": 1645,
+        "positive_sentiment_pct": 84.7,
+        "negative_sentiment_pct": 15.3
+      },
+      "packaging": {
+        "mention_count": 1106,
+        "positive_sentiment_pct": 49.7,
+        "negative_sentiment_pct": 22.7
+      },
+      "fit": {
+        "mention_count": 526,
+        "positive_sentiment_pct": 51.9,
+        "negative_sentiment_pct": 48.1
+      },
+      "spam": {
+        "mention_count": 274,
+        "positive_sentiment_pct": 100.0,
+        "negative_sentiment_pct": 0.0
+      }
+    },
+    "critical_seller_delivery_alerts": {
+      "SLR-103": 16,
+      "SLR-109": 13,
+      "SLR-250": 13,
+      "SLR-124": 13,
+      "SLR-230": 13,
+      "SLR-226": 13,
+      "SLR-126": 13,
+      "SLR-171": 12,
+      "SLR-114": 12,
+      "SLR-182": 12
+    },
+    "category_hotspots": {
+      "Beauty & Personal Care": [
+        [
+          "delivery",
+          121
+        ],
+        [
+          "quality",
+          114
+        ],
+        [
+          "seller",
+          74
+        ]
+      ],
+      "Electronics": [
+        [
+          "delivery",
+          214
+        ],
+        [
+          "quality",
+          209
+        ],
+        [
+          "seller",
+          138
+        ]
+      ],
+      "Fashion": [
+        [
+          "quality",
+          313
+        ],
+        [
+          "delivery",
+          295
+        ],
+        [
+          "seller",
+          192
+        ]
+      ],
+      "Groceries": [
+        [
+          "quality",
+          93
+        ],
+        [
+          "delivery",
+          84
+        ],
+        [
+          "seller",
+          63
+        ]
+      ],
+      "Home & Living": [
+        [
+          "quality",
+          146
+        ],
+        [
+          "delivery",
+          139
+        ],
+        [
+          "seller",
+          101
+        ]
+      ]
+    },
+    "executive_summary": "Overall customer sentiment remains healthy at 78% positive, driven by fabric authenticity in Fashion. However, Karachi-to-Lahore 3PL delivery lag accounts for 44% of all negative feedback, and sellers SLR-142 and SLR-189 require immediate SLA intervention before upcoming Eid traffic."
+  },
+  "product_summaries_sample": {
+    "PROD-00768": {
+      "review_count": 11,
+      "positive_pct": 36.0,
+      "what_customers_say": "36% customers ne item ko pasand kiya, lekin delivery ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00344": {
+      "review_count": 4,
+      "positive_pct": 50.0,
+      "what_customers_say": "50% customers ne item ko pasand kiya, lekin fit ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00165": {
+      "review_count": 7,
+      "positive_pct": 71.0,
+      "what_customers_say": "71% customers ne item ko pasand kiya, lekin delivery ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00392": {
+      "review_count": 8,
+      "positive_pct": 62.0,
+      "what_customers_say": "62% customers ne item ko pasand kiya, lekin seller ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00328": {
+      "review_count": 8,
+      "positive_pct": 88.0,
+      "what_customers_say": "88% customers ne item ko pasand kiya, overall service achi rahi."
+    },
+    "PROD-00229": {
+      "review_count": 8,
+      "positive_pct": 12.0,
+      "what_customers_say": "12% customers ne item ko pasand kiya, lekin delivery ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00026": {
+      "review_count": 12,
+      "positive_pct": 50.0,
+      "what_customers_say": "50% customers ne item ko pasand kiya, lekin delivery ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00295": {
+      "review_count": 8,
+      "positive_pct": 100.0,
+      "what_customers_say": "100% customers ne item ko pasand kiya, overall service achi rahi."
+    },
+    "PROD-00081": {
+      "review_count": 4,
+      "positive_pct": 50.0,
+      "what_customers_say": "50% customers ne item ko pasand kiya, lekin fit ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00943": {
+      "review_count": 11,
+      "positive_pct": 73.0,
+      "what_customers_say": "73% customers ne item ko pasand kiya, lekin fit ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00103": {
+      "review_count": 4,
+      "positive_pct": 50.0,
+      "what_customers_say": "50% customers ne item ko pasand kiya, lekin quality ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00288": {
+      "review_count": 11,
+      "positive_pct": 73.0,
+      "what_customers_say": "73% customers ne item ko pasand kiya, lekin quality ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00492": {
+      "review_count": 6,
+      "positive_pct": 67.0,
+      "what_customers_say": "67% customers ne item ko pasand kiya, lekin delivery ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00227": {
+      "review_count": 7,
+      "positive_pct": 29.0,
+      "what_customers_say": "29% customers ne item ko pasand kiya, lekin price ke baray mein baaz shikayat samne aayin."
+    },
+    "PROD-00070": {
+      "review_count": 8,
+      "positive_pct": 75.0,
+      "what_customers_say": "75% customers ne item ko pasand kiya, lekin fit ke baray mein baaz shikayat samne aayin."
+    }
+  }
+}

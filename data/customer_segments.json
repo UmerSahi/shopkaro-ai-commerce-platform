@@ -1,0 +1,57 @@
+[
+  {
+    "segment_id": 4,
+    "name": "Loyal High-Spenders & Tech Enthusiasts",
+    "user_count": 1272,
+    "user_share_pct": 5.39,
+    "avg_recency_days": 236.3,
+    "avg_orders": 1.85,
+    "avg_monetary_pkr": 163175.05,
+    "description": "High purchasing frequency, high monetary basket value across smartphones and premium electronics.",
+    "marketing_action": "VIP priority shipping, exclusive preview access to upcoming gadget launches, and zero-fee COD."
+  },
+  {
+    "segment_id": 2,
+    "name": "Seasonal & Festival Shoppers (Eid & 11.11)",
+    "user_count": 1770,
+    "user_share_pct": 7.5,
+    "avg_recency_days": 182.7,
+    "avg_orders": 2.23,
+    "avg_monetary_pkr": 41583.24,
+    "description": "High monetary bursts during Eid ul Fitr, Ramadan, and 11.11 sales, primarily in Lawn and Festive wear.",
+    "marketing_action": "Targeted WhatsApp early-bird catalogs for Eid lawn pre-booking and volume discount bundles."
+  },
+  {
+    "segment_id": 0,
+    "name": "Bargain Hunters & Deal Explorers",
+    "user_count": 5998,
+    "user_share_pct": 25.42,
+    "avg_recency_days": 197.0,
+    "avg_orders": 0.87,
+    "avg_monetary_pkr": 14802.58,
+    "description": "Frequent views and cart additions but high price sensitivity, low average order value.",
+    "marketing_action": "Automated price drop alerts, free shipping vouchers on cart totals above PKR 2,500, and flash sale countdowns."
+  },
+  {
+    "segment_id": 1,
+    "name": "Everyday Household & Grocery Replenishers",
+    "user_count": 5259,
+    "user_share_pct": 22.29,
+    "avg_recency_days": 643.8,
+    "avg_orders": 0.2,
+    "avg_monetary_pkr": 3711.2,
+    "description": "Consistent moderate order frequency with steady repeat basket additions (tea, rice, spices, toiletries).",
+    "marketing_action": "Automated monthly restock reminders and 10% subscription discounts on recurring pantry essentials."
+  },
+  {
+    "segment_id": 3,
+    "name": "Dormant / At-Risk Visitors",
+    "user_count": 9292,
+    "user_share_pct": 39.39,
+    "avg_recency_days": 173.1,
+    "avg_orders": 0.12,
+    "avg_monetary_pkr": 1738.98,
+    "description": "High recency (inactive > 90 days) with historical views but minimal completed purchases.",
+    "marketing_action": "'Hum aapko miss kar rahe hain' win-back SMS with flat PKR 500 off coupon expiring in 72 hours."
+  }
+]
