@@ -26,42 +26,23 @@ This repository delivers an end-to-end, production-ready AI Commerce Intelligenc
 
 ## 🚀 Quickstart & Setup Guide
 
-### Option 1: Local Python Environment
+### Option 1: Local Python & Next.js Environment
 ```bash
-# 1. Clone repository
-git clone https://github.com/shopkaro/ai-commerce-platform.git
-cd "AI Commerce Intelligence Platform"
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Ingest and build DuckDB database & features (Day 1)
-python src/pipeline/generator.py
-python src/pipeline/ingestion.py
-python src/pipeline/analytics_segmentation.py
-
-# 4. Train recommender engine (Day 2)
-python -m src.recommender.engine
-
-# 5. Train demand forecaster (Day 3)
-python -m src.forecasting.engine
-
-# 6. Index search & review intelligence (Day 4)
-python -m src.search_nlp.engine
-
-# 7. Run A/B test simulation (Day 5)
-python -m src.ab_testing.experiment
-
-# 8. Start FastAPI production server with Cinematic UI
+# 1. Start FastAPI Backend (Terminal 1)
 python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000
-```
-Open your browser at **`http://localhost:8000`** to access the interactive platform dashboard, or **`http://localhost:8000/docs`** for the Swagger REST API documentation.
 
-### Option 2: Dockerized Deployment
+# 2. Start Next.js Cinematic UI Frontend (Terminal 2)
+cd frontend
+npm install
+npm run dev
+```
+Open your browser at **`http://localhost:3000`** to access the Next.js Cinematic UI application, or **`http://localhost:8000`** for the FastAPI integrated server and **`http://localhost:8000/docs`** for the interactive Swagger REST API.
+
+### Option 2: Full Dockerized Deployment (FastAPI + Redis + Next.js)
 ```bash
 docker-compose up --build -d
 ```
-Access the application at `http://localhost:8000` with containerized Redis caching.
+Access the application at `http://localhost:3000` (Next.js Frontend) and `http://localhost:8000` (FastAPI Microservices).
 
 ---
 
@@ -157,3 +138,4 @@ ALL 10 VERIFICATION TESTS PASSED SUCCESSFULLY! PRODUCTION READY!
 
 ## 📜 License
 This project is proprietary and confidential, developed for **ShopKaro Pakistan**. All rights reserved.
+

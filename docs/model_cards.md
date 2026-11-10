@@ -77,3 +77,4 @@
 * **Tool Calling Enforcement:** The assistant is restricted from generating any factual claims regarding product availability, specifications, prices, or order tracking that do not originate from tool outputs (`search_products`, `compare_products`, `get_order_status`, `add_to_cart`).
 * **Zero Invented Products Guarantee:** Every product recommendation maps to an active database SKU.
 * **Pakistani Cultural & Linguistic Fluency:** Natural conversational Roman Urdu ("Ji zaroor! Yeh options aap ke budget mein hain...", "Paisa vasool item").
+

@@ -7,3 +7,4 @@ venv/
 data/models/*.pkl
 data/*.duckdb
 data/*.parquet
+

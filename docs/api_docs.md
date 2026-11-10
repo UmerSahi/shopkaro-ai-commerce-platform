@@ -154,3 +154,4 @@ Returns 14-day daily probabilistic forecasts (P10, P50, P90) alongside safety st
 `GET /inventory/alerts`
 
 Returns critical stock-out alerts (<14 days), overstock markdown candidates, and pre-festival stocking plans.
+

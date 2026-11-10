@@ -29,3 +29,4 @@
 * **Latency SLA**: $< 100\text{ ms}$ for 99% of recommendation calls.
 * **Batch Pre-Computation**: Top 10,000 active user recommendations are computed overnight and written to Redis with a 24-hour TTL (`rec:{user_id}:top_k`).
 * **Real-Time Session Modulation**: When a user registers 3 or more clicks in an active session, `/session/click` updates the user's session cache and dynamically blends similar products into the active feed without full model re-scoring.
+

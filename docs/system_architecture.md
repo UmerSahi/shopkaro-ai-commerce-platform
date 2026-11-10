@@ -3,6 +3,91 @@
 
 ### 1. High-Level Architectural Diagram
 
+```
+
+---
+
+### 1.1 Data Model (Entity-Relationship Diagram)
+
+```mermaid
+erDiagram
+    USERS ||--o{ CLEANED_EVENTS : generates
+    PRODUCTS ||--o{ CLEANED_EVENTS : receives
+    USERS ||--o{ USER_SEGMENTS : categorized_into
+    PRODUCTS ||--o{ DAILY_SALES : recorded_in
+    PRODUCTS ||--o{ REVIEWS : reviewed_in
+    USERS ||--o{ REVIEWS : writes
+
+    USERS {
+        string user_id PK
+        int user_idx
+        string city
+        string preferred_category
+        string device
+        timestamp created_at
+    }
+
+    PRODUCTS {
+        string product_id PK
+        int item_idx
+        string title
+        string category
+        string subcategory
+        string brand
+        float price
+        float margin_rate
+        int stock_quantity
+        int lead_time_days
+        float rating
+        string seller_id
+        string description
+    }
+
+    CLEANED_EVENTS {
+        string session_id
+        string user_id FK
+        int user_idx
+        string product_id FK
+        int item_idx
+        string category
+        string brand
+        float price
+        string event_type
+        timestamp timestamp
+    }
+
+    USER_SEGMENTS {
+        string user_id PK
+        int cluster
+        string segment_name
+        float recency
+        int frequency
+        float monetary
+        string marketing_action
+    }
+
+    DAILY_SALES {
+        date date
+        string product_id FK
+        string category
+        int quantity
+        float revenue
+        string festival
+        int day_of_week
+        int is_weekend
+    }
+
+    REVIEWS {
+        string review_id PK
+        string product_id FK
+        string user_id FK
+        int rating
+        string review_text
+        string sentiment
+        string aspects
+        boolean is_spam
+        timestamp created_at
+    }
 ```mermaid
 flowchart TD
     subgraph Data_Layer ["Data Layer (Storage & Ingestion)"]
@@ -68,6 +153,91 @@ flowchart TD
 
 ---
 
+### 1.1 Data Model (Entity-Relationship Diagram)
+
+```mermaid
+erDiagram
+    USERS ||--o{ CLEANED_EVENTS : generates
+    PRODUCTS ||--o{ CLEANED_EVENTS : receives
+    USERS ||--o{ USER_SEGMENTS : categorized_into
+    PRODUCTS ||--o{ DAILY_SALES : recorded_in
+    PRODUCTS ||--o{ REVIEWS : reviewed_in
+    USERS ||--o{ REVIEWS : writes
+
+    USERS {
+        string user_id PK
+        int user_idx
+        string city
+        string preferred_category
+        string device
+        timestamp created_at
+    }
+
+    PRODUCTS {
+        string product_id PK
+        int item_idx
+        string title
+        string category
+        string subcategory
+        string brand
+        float price
+        float margin_rate
+        int stock_quantity
+        int lead_time_days
+        float rating
+        string seller_id
+        string description
+    }
+
+    CLEANED_EVENTS {
+        string session_id
+        string user_id FK
+        int user_idx
+        string product_id FK
+        int item_idx
+        string category
+        string brand
+        float price
+        string event_type
+        timestamp timestamp
+    }
+
+    USER_SEGMENTS {
+        string user_id PK
+        int cluster
+        string segment_name
+        float recency
+        int frequency
+        float monetary
+        string marketing_action
+    }
+
+    DAILY_SALES {
+        date date
+        string product_id FK
+        string category
+        int quantity
+        float revenue
+        string festival
+        int day_of_week
+        int is_weekend
+    }
+
+    REVIEWS {
+        string review_id PK
+        string product_id FK
+        string user_id FK
+        int rating
+        string review_text
+        string sentiment
+        string aspects
+        boolean is_spam
+        timestamp created_at
+    }
+```
+
+---
+
 ### 2. Core Architectural Components
 
 #### 2.1 Storage & OLAP Pipeline (DuckDB)
@@ -100,3 +270,4 @@ flowchart TD
 #### 2.5 Real-Time Serving & Caching (Day 5)
 * **FastAPI Async Engine**: RESTful endpoints with sub-10ms response time when cached, safely satisfying the client's <100ms latency SLA.
 * **Redis Caching**: Hot user recommendations are pre-computed in batch and cached; recent in-session clicks dynamically re-rank recommendations on the fly.
+

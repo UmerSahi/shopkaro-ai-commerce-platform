@@ -51,3 +51,4 @@ The platform continuously clusters ShopKaro's 25,000+ active customers into 5 RF
   - Guardrail SLA: Serving latency must not exceed 100 ms ($P95 < 100\text{ ms}$).
 * **Decision Framework**:
   - If both primary metrics achieve statistical significance without breaching latency or return rate guardrails, the platform issues an automated **"SHIP TO 100% PRODUCTION TRAFFIC"** determination.
+
