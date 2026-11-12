@@ -123,10 +123,15 @@ class ShopKaroHybridSearch:
         # Categories
         cat_keywords = {
             "Fashion": ["lawn", "suit", "kurta", "shawl", "chappal", "khussa", "lehenga", "clothing", "dress", "kapra", "kapray"],
-            "Electronics": ["laptop", "phone", "mobile", "charger", "earbuds", "watch", "smartwatch", "gadget"],
-            "Home & Living": ["bedsheet", "rug", "carpet", "air fryer", "kettle", "handi", "mug"],
-            "Beauty & Personal Care": ["perfume", "attar", "serum", "sunscreen", "oil", "rose water"],
-            "Groceries": ["tea", "chai", "rice", "biryani", "masala", "rooh afza", "dates", "ghee"]
+            "Electronics": [
+                "laptop", "phone", "mobile", "charger", "earbuds", "watch", "smartwatch",
+                "gadget", "audio", "tech", "sound", "headphone", "headphones", "bluetooth",
+                "speaker", "speakers", "wireless", "electronics", "anker", "samsung", "apple",
+                "airpods", "soundcore"
+            ],
+            "Home & Living": ["bedsheet", "rug", "carpet", "air fryer", "kettle", "handi", "mug", "living", "appliances", "appliance", "ac", "dawlance"],
+            "Beauty & Personal Care": ["perfume", "attar", "serum", "sunscreen", "oil", "rose water", "fragrance"],
+            "Groceries": ["tea", "chai", "rice", "biryani", "masala", "rooh afza", "dates", "ghee", "pantry", "groceries", "kernel"]
         }
         for cat, kw_list in cat_keywords.items():
             if any(kw in q_lower for kw in kw_list):
@@ -150,7 +155,7 @@ class ShopKaroHybridSearch:
         
         return extracted
 
-    def search(self, query, top_k=20, user_profile=None):
+    def search(self, query, top_k=20, user_profile=None, category=None):
         """
         Hybrid Search:
         1. Query understanding & normalization
@@ -160,8 +165,24 @@ class ShopKaroHybridSearch:
         5. Hard filter constraints (price, category)
         6. Personalization re-ranking (if user_profile provided)
         """
+        if not isinstance(query, str):
+            query = str(query) if query is not None else ""
         parsed = self.parse_query_intent(query)
-        expanded_query_str = " ".join(parsed["expanded_tokens"])
+        expanded_query_str = " ".join(parsed["expanded_tokens"]) if parsed.get("expanded_tokens") else (query or "")
+        target_cat = category or parsed.get("category")
+        
+        # Safe fallback for empty or tokenless query
+        if not expanded_query_str.strip():
+            if target_cat:
+                cat_df = self.products_df[self.products_df["category"].str.lower() == target_cat.lower()].head(top_k)
+                return [r.to_dict() for _, r in cat_df.iterrows()], parsed
+            else:
+                diverse = []
+                for cat in ["Fashion", "Electronics", "Home & Living", "Beauty & Personal Care", "Groceries"]:
+                    cat_df = self.products_df[self.products_df["category"] == cat].head(top_k // 4 + 1)
+                    for _, r in cat_df.iterrows():
+                        diverse.append(r.to_dict())
+                return diverse[:top_k], parsed
         
         # 1. BM25 scoring
         bm25_tokens = self._tokenize(expanded_query_str)
@@ -171,12 +192,11 @@ class ShopKaroHybridSearch:
         query_vec = self.vectorizer.transform([expanded_query_str])
         semantic_scores = cosine_similarity(query_vec, self.doc_vectors).flatten()
         
-        # Select top 60 candidates from both
-        top_bm25_indices = np.argsort(bm25_scores)[::-1][:60]
-        top_semantic_indices = np.argsort(semantic_scores)[::-1][:60]
+        # Select top 120 candidates from both to have ample pool
+        top_bm25_indices = np.argsort(bm25_scores)[::-1][:120]
+        top_semantic_indices = np.argsort(semantic_scores)[::-1][:120]
         
         # 3. Reciprocal Rank Fusion (RRF)
-        # RRF_Score = sum(1 / (60 + rank))
         rrf_scores = defaultdict(float)
         k_rrf = 60
         
@@ -189,15 +209,17 @@ class ShopKaroHybridSearch:
         # Sort candidates
         candidate_indices = sorted(rrf_scores.keys(), key=lambda i: rrf_scores[i], reverse=True)
         
-        # 4. Filters & Personalization
-        results = []
+        # 4. Filters & Personalization with Subcategory Diversification
+        scored_candidates = []
+        subcat_counts = defaultdict(int)
+        deferred_candidates = []
+
         for idx in candidate_indices:
             p_row = self.products_df.iloc[idx]
             
-            # Category filter
-            if parsed["category"] and p_row["category"] != parsed["category"]:
-                # Soft penalty rather than hard cut to maintain recall
-                rrf_scores[idx] *= 0.5
+            # Category filter: if target_cat is specified, strictly isolate to that category
+            if target_cat and p_row["category"].lower() != target_cat.lower():
+                continue
                 
             # Price filter
             if parsed["max_price"] and p_row["price"] > parsed["max_price"]:
@@ -210,12 +232,36 @@ class ShopKaroHybridSearch:
                 if fav_cat and p_row["category"] == fav_cat:
                     score *= 1.30 # +30% personalization boost
                     
-            results.append((p_row["product_id"], score, p_row))
-            if len(results) >= top_k:
+            sub_key = (p_row["brand"], p_row.get("subcategory", ""))
+            if subcat_counts[sub_key] < 2:
+                subcat_counts[sub_key] += 1
+                scored_candidates.append((p_row["product_id"], score, p_row))
+            else:
+                deferred_candidates.append((p_row["product_id"], score, p_row))
+                
+            if len(scored_candidates) >= top_k:
                 break
                 
-        results.sort(key=lambda x: x[1], reverse=True)
-        return [r[2].to_dict() for r in results[:top_k]], parsed
+        # Fill from deferred if top_k not reached
+        if len(scored_candidates) < top_k:
+            for item in deferred_candidates:
+                scored_candidates.append(item)
+                if len(scored_candidates) >= top_k:
+                    break
+                
+        # If target_cat was requested but fewer than top_k items were found in top candidates,
+        # backfill directly with items from that category
+        if target_cat and len(scored_candidates) < top_k:
+            cat_df = self.products_df[self.products_df["category"].str.lower() == target_cat.lower()]
+            existing_ids = {item[0] for item in scored_candidates}
+            for _, row in cat_df.iterrows():
+                if row["product_id"] not in existing_ids:
+                    scored_candidates.append((row["product_id"], 0.001, row))
+                    if len(scored_candidates) >= top_k:
+                        break
+                
+        scored_candidates.sort(key=lambda x: x[1], reverse=True)
+        return [r[2].to_dict() for r in scored_candidates[:top_k]], parsed
 
     def evaluate_50_queries(self):
         """
