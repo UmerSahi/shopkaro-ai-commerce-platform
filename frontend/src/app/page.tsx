@@ -1,1163 +1,1407 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  AnimatePresence,
+} from "framer-motion";
 import {
   Search,
   ShoppingCart,
-  TrendingUp,
-  Sparkles,
-  BarChart3,
-  MessageSquare,
-  AlertTriangle,
-  Package,
-  Layers,
-  ChevronRight,
-  X,
+  Heart,
+  Star,
+  ArrowRight,
+  Sliders,
   CheckCircle2,
-  Clock,
-  ArrowUpRight
+  Truck,
+  ShieldCheck,
+  ChevronDown,
+  ChevronRight,
+  TrendingUp,
+  Tag,
+  Zap,
+  Eye,
+  X,
+  HelpCircle,
+  Package,
 } from "lucide-react";
+
+import { CartDrawer, CartItem } from "../components/CartDrawer";
+import { ProductDetailModal } from "../components/ProductDetailModal";
+import { ProductPeekDrawer } from "../components/ProductPeekDrawer";
+import { SearchOverlay } from "../components/SearchOverlay";
+import { StudioDrawer } from "../components/StudioDrawer";
+import { ShortcutSheet } from "../components/ShortcutSheet";
+import { CommandPalette } from "../components/CommandPalette";
+import { TiltCard } from "../components/TiltCard";
+import { Product, getProductImage, cleanTitle, DEFAULT_CURATED_PRODUCTS, ELECTRONICS_CURATED_PRODUCTS } from "../lib/products";
+import {
+  HeroStarburstSticker,
+  HeroLuggageTagSticker,
+  WashiTapeSticker,
+  ProductCardSticker,
+  CuratorSpotlightSticker,
+} from "../components/EditorialStickers";
 
 const API_BASE = "http://127.0.0.1:8000";
 
-interface Product {
-  product_id: string;
-  title: string;
-  category: string;
-  subcategory?: string;
-  brand: string;
-  price: number;
-  rating?: number;
-  stock_quantity: number;
-  lead_time_days?: number;
+// High-fidelity mapping between UI category filter pills and backend catalog categories & queries
+const CATEGORY_MAP: Record<string, { query: string; category?: string }> = {
+  "All": { query: "", category: undefined },
+  "Lawn & Festive": { query: "lawn suit bareeze embroidered luxury", category: "Fashion" },
+  "Men's Kurta": { query: "kurta waistcoat cotton pure junaid", category: "Fashion" },
+  "Pure Audio & Tech": { query: "earbuds headphones soundcore wireless charger audio bluetooth anker samsung", category: "Electronics" },
+  "Artisanal Fragrance": { query: "perfume oud fragrance attar royal", category: "Beauty & Personal Care" },
+  "Modern Living": { query: "appliances air conditioner kitchen living dawlance", category: "Home & Living" },
+  "Organic Pantry": { query: "basmati rice tea pantry spices", category: "Groceries" },
+};
+
+// Human editorial curation tag helper
+function getCurationTag(product: Partial<Product>, index: number): string {
+  const cat = (product.category || "").toLowerCase();
+  const title = (product.title || "").toLowerCase();
+
+  if (title.includes("lawn") || cat.includes("fashion")) {
+    const tags = ["Eid Festive Edit", "Pure Cotton Weave", "Handcrafted Stitch", "Atelier Selection"];
+    return tags[index % tags.length];
+  }
+  if (cat.includes("electronics") || title.includes("audio") || title.includes("anker") || title.includes("samsung")) {
+    const tags = ["High-Fidelity Sound", "Fast Charging 65W", "Verified Authentic", "Studio Tech Pick"];
+    return tags[index % tags.length];
+  }
+  if (cat.includes("home")) {
+    const tags = ["Artisanal Living", "Heritage Ceramic", "Modern Home Edit", "Comfort Weave"];
+    return tags[index % tags.length];
+  }
+  if (cat.includes("grocer") || title.includes("rice") || title.includes("chai")) {
+    const tags = ["Pakistani Reserve", "Super Kernel Aged", "Traditional Blend", "Pantry Essential"];
+    return tags[index % tags.length];
+  }
+  return "Curated for You";
 }
 
-interface CartItem {
-  product_id: string;
-  title: string;
-  price: number;
-  qty: number;
-}
+export default function StorefrontPage() {
+  // State: Products & Cart (Seeded with luxury curated defaults for zero flash of empty content)
+  const [personalizedRecs, setPersonalizedRecs] = useState<Product[]>(DEFAULT_CURATED_PRODUCTS.slice(0, 4));
+  const [trendingProducts, setTrendingProducts] = useState<Product[]>(DEFAULT_CURATED_PRODUCTS);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-interface ChatMessage {
-  sender: "user" | "assistant";
-  text: string;
-  toolCalled?: string;
-}
+  // Filter & Search
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"recommended" | "price-asc" | "price-desc" | "rating">("recommended");
 
-export default function ShopKaroCinematicApp() {
-  const [activeView, setActiveView] = useState<"customer" | "operations" | "management" | "assistant">("customer");
-  const [persona, setPersona] = useState<string>("USR-00001");
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
-  const [peekPid, setPeekPid] = useState<string | null>(null);
-  const [peekData, setPeekData] = useState<any>(null);
-  const [isPeekLoading, setIsPeekLoading] = useState<boolean>(false);
+  // Modals & Drawers
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isStudioOpen, setIsStudioOpen] = useState(false);
+  const [isShortcutOpen, setIsShortcutOpen] = useState(false);
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const [peekSkuId, setPeekSkuId] = useState<string | null>(null);
+  const [selectedProductModal, setSelectedProductModal] = useState<Product | null>(null);
 
-  // Recommendations state
-  const [recs, setRecs] = useState<Product[]>([]);
-  const [recModel, setRecModel] = useState<string>("hybrid_two_tower");
-  const [recLatency, setRecLatency] = useState<number>(4.2);
-  const [isRecCached, setIsRecCached] = useState<boolean>(true);
-  const [boughtTogether, setBoughtTogether] = useState<{ explanation: string; items: Product[] }>({
-    explanation: "Kyun ke aap ne yeh item dekha, doosre khareedar aksar matching accessories bhi pasand kartay hain.",
-    items: [],
-  });
+  // Active Persona & Model (For Studio/Judges)
+  const [activePersona, setActivePersona] = useState("USR-00002"); // Festive Fashionista by default
+  const [activePersonaName, setActivePersonaName] = useState("Festive Fashionista");
+  const [activeModel, setActiveModel] = useState("two-tower");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
-  const [parsedIntent, setParsedIntent] = useState<any>(null);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [searchLatency, setSearchLatency] = useState<number>(0);
+  // Announcement Bar dismiss
+  const [showAnnouncement, setShowAnnouncement] = useState(true);
 
-  // Operations state
-  const [stockoutAlerts, setStockoutAlerts] = useState<any[]>([]);
-  const [overstockAlerts, setOverstockAlerts] = useState<any[]>([]);
-  const [preEidPlan, setPreEidPlan] = useState<any[]>([]);
+  // Header blur on scroll
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  // Management state
-  const [segments, setSegments] = useState<any[]>([]);
-  const [abReport, setAbReport] = useState<any>(null);
-  const [aspects, setAspects] = useState<any>(null);
-
-  // Assistant state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      sender: "assistant",
-      text: "Assalam-o-Alaikum! Main ShopKaro ka AI Assistant hoon. Aap Urdu, English ya Roman Urdu (UrduLish) mein koi bhi cheez pooch saktay hain — maslan 'Ammi ke liye Eid gift chahiye, 3000 tak' ya order tracking.",
-    },
-  ]);
-  const [chatInput, setChatInput] = useState<string>("");
-  const [isAssistantThinking, setIsAssistantThinking] = useState<boolean>(false);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Keyboard Shortcuts (Cinematic UI 2.0 Director's Cut)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) {
-        if (e.key === "Escape") {
-          target.blur();
-          setPeekPid(null);
-          setIsCartOpen(false);
-        }
-        return;
-      }
-
-      if (e.key === "1") setActiveView("customer");
-      else if (e.key === "2") setActiveView("operations");
-      else if (e.key === "3") setActiveView("management");
-      else if (e.key === "4") setActiveView("assistant");
-      else if (e.key === "/") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      } else if (e.key.toLowerCase() === "p") {
-        if (peekPid) setPeekPid(null);
-        else if (recs.length > 0) openPeek(recs[0].product_id);
-      } else if (e.key === "Escape") {
-        setPeekPid(null);
-        setIsCartOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [peekPid, recs]);
-
-  // Initial load & persona changes
-  useEffect(() => {
-    loadRecommendations(persona);
-  }, [persona]);
+  // Search input placeholder rotation
+  const searchPlaceholders = [
+    'Search "eid ke liye lawn suit"...',
+    'Search "fast charger 65W type-c"...',
+    'Search "super kernel basmati rice"...',
+    'Search "oud perfume attar"...',
+    'Search "men kurta pure cotton"...',
+  ];
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
   useEffect(() => {
-    loadOperationsData();
-    loadManagementData();
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % searchPlaceholders.length);
+    }, 3500);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, isAssistantThinking]);
-
-  // Data fetching functions
-  const loadRecommendations = async (user: string) => {
-    try {
-      const res = await fetch(`${API_BASE}/recommendations/${user}?top_k=8`);
-      const data = await res.json();
-      setRecs(data.recommendations || []);
-      setRecModel(data.model_used || "hybrid_two_tower");
-      setRecLatency(data.latency_ms || 5.0);
-      setIsRecCached(data.served_from_cache ?? true);
-
-      if (data.recommendations && data.recommendations.length > 0) {
-        loadBoughtTogether(data.recommendations[0].product_id);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const catParam = params.get("cat");
+      if (catParam) {
+        setSelectedCategory(catParam);
       }
-    } catch (err) {
-      console.error("Failed to load recommendations", err);
     }
-  };
+  }, []);
 
-  const loadBoughtTogether = async (pid: string) => {
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Framer Motion Parallax Hooks
+  const { scrollY, scrollYProgress } = useScroll();
+  const heroBgOrb1Y = useTransform(scrollY, [0, 800], [0, 160]);
+  const heroBgOrb2Y = useTransform(scrollY, [0, 800], [0, -120]);
+  const heroStageY = useTransform(scrollY, [0, 700], [0, 85]);
+  const heroStageScale = useTransform(scrollY, [0, 700], [1, 0.94]);
+  const badgeTopY = useTransform(scrollY, [0, 700], [0, -45]);
+  const badgeBottomY = useTransform(scrollY, [0, 700], [0, 50]);
+  const eidStoryImgY = useTransform(scrollYProgress, [0.3, 0.65], [-35, 35]);
+
+  // Keyboard navigation listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      } else if (e.key === "c" || e.key === "C") {
+        setIsCartOpen((prev) => !prev);
+      } else if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsCommandOpen(true);
+      } else if (e.key === "?") {
+        e.preventDefault();
+        setIsShortcutOpen(true);
+      } else if (e.key === "Escape") {
+        setIsCartOpen(false);
+        setIsSearchOpen(false);
+        setIsStudioOpen(false);
+        setIsShortcutOpen(false);
+        setIsCommandOpen(false);
+        setPeekSkuId(null);
+        setSelectedProductModal(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Sequence counter ref to guard against stale race condition responses
+  const searchReqIdRef = useRef(0);
+
+  // Fetch initial products
+  const fetchProductsForPersona = async (personaId: string, categoryOverride?: string) => {
+    const currentReqId = ++searchReqIdRef.current;
+    setIsLoading(true);
+    const catToUse = categoryOverride !== undefined ? categoryOverride : selectedCategory;
+
     try {
-      const res = await fetch(`${API_BASE}/bought-together/${pid}?top_k=3`);
-      const data = await res.json();
-      setBoughtTogether({
-        explanation: data.explanation,
-        items: data.frequently_bought_together || [],
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      const userId = personaId === "COLD_START_USER" ? 0 : personaId === "USR-00001" ? 101 : personaId === "USR-00003" ? 303 : 202;
+      const recRes = await fetch(`${API_BASE}/recommendations/${userId}?n=6`);
+      if (recRes.ok && currentReqId === searchReqIdRef.current) {
+        const recData = await recRes.json();
+        if (recData.recommendations && recData.recommendations.length > 0) {
+          setPersonalizedRecs(recData.recommendations);
+        }
+      }
 
-  const loadOperationsData = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/inventory/alerts`);
-      const data = await res.json();
-      setStockoutAlerts(data.critical_stockout_alerts || []);
-      setOverstockAlerts(data.overstock_alerts || []);
-      setPreEidPlan(data.pre_festival_stocking_plan_top_10 || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      // Fetch search results for trending products using category-aware query mapping
+      const catConfig = CATEGORY_MAP[catToUse] || { query: catToUse, category: undefined };
+      const q = searchQuery.trim() || catConfig.query;
+      const targetCat = searchQuery.trim() ? undefined : catConfig.category;
 
-  const loadManagementData = async () => {
-    try {
-      const [segRes, abRes, diagRes] = await Promise.all([
-        fetch(`${API_BASE}/analytics/segments`),
-        fetch(`${API_BASE}/ab-test/results`),
-        fetch(`${API_BASE}/analytics/diagnostics`),
-      ]);
-      const segData = await segRes.json();
-      const abData = await abRes.json();
-      const diagData = await diagRes.json();
-
-      setSegments(segData || []);
-      setAbReport(abData || null);
-      setAspects(diagData.review_intelligence?.weekly_report?.aspect_breakdown || null);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleSearch = async (queryText: string) => {
-    if (!queryText.trim()) return;
-    setIsSearching(true);
-    try {
-      const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(queryText)}&user_id=${persona}`);
-      const data = await res.json();
-      setSearchResults(data.products || []);
-      setParsedIntent(data.parsed_intent || null);
-      setSearchLatency(data.latency_ms || 8);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const openPeek = async (pid: string) => {
-    setPeekPid(pid);
-    setIsPeekLoading(true);
-    try {
-      // Record click for real-time session updates
-      fetch(`${API_BASE}/session/click`, {
+      const trendRes = await fetch(`${API_BASE}/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: "sess_nextjs", user_id: persona, product_id: pid }),
+        body: JSON.stringify({
+          query: q,
+          category: targetCat,
+          top_k: 16,
+        }),
       });
 
-      const [fRes, revRes, simRes] = await Promise.all([
-        fetch(`${API_BASE}/forecast/${pid}`),
-        fetch(`${API_BASE}/reviews/summary/${pid}`),
-        fetch(`${API_BASE}/similar/${pid}?top_k=3`),
-      ]);
-      const fData = await fRes.json();
-      const revData = await revRes.json();
-      const simData = await simRes.json();
+      if (trendRes.ok && currentReqId === searchReqIdRef.current) {
+        const trendData = await trendRes.json();
+        let items: Product[] = trendData.results || trendData.products || [];
 
-      setPeekData({
-        forecast: fData,
-        reviews: revData,
-        similar: simData.similar_products || [],
-      });
+        // STRICT ISOLATION: If a target category is specified (e.g. Electronics),
+        // only keep items belonging to that category.
+        if (targetCat) {
+          const strictlyFiltered = items.filter(
+            (p) => p.category?.toLowerCase() === targetCat.toLowerCase()
+          );
+          if (strictlyFiltered.length > 0) {
+            items = strictlyFiltered;
+          }
+        }
+
+        // Guaranteed authentic Electronics fallback if backend returns cross-category leaks
+        if (targetCat === "Electronics" && (items.length === 0 || items.some(p => p.category?.toLowerCase() !== "electronics"))) {
+          items = ELECTRONICS_CURATED_PRODUCTS;
+        }
+
+        setTrendingProducts(items);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load products:", err);
+      if (catToUse === "Pure Audio & Tech") {
+        setTrendingProducts(ELECTRONICS_CURATED_PRODUCTS);
+      }
     } finally {
-      setIsPeekLoading(false);
+      if (currentReqId === searchReqIdRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
-  const addToCart = (product: Product) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.product_id === product.product_id);
+  const handleSelectCategory = (cat: string) => {
+    setSelectedCategory(cat);
+  };
+
+  useEffect(() => {
+    fetchProductsForPersona(activePersona, selectedCategory);
+  }, [activePersona, selectedCategory, searchQuery]);
+
+  // Toast trigger
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Cart operations
+  const handleAddToCart = (product: Partial<Product>, qty = 1) => {
+    if (!product.product_id) return;
+    setCartItems((prev) => {
+      const existing = prev.find((i) => i.product_id === product.product_id);
       if (existing) {
-        return prev.map((item) =>
-          item.product_id === product.product_id ? { ...item, qty: item.qty + 1 } : item
+        return prev.map((i) =>
+          i.product_id === product.product_id ? { ...i, qty: i.qty + qty } : i
         );
       }
-      return [...prev, { product_id: product.product_id, title: product.title, price: product.price, qty: 1 }];
+      return [
+        ...prev,
+        {
+          product_id: product.product_id!,
+          title: cleanTitle(product.title || "Curated Product"),
+          price: product.price || 2500,
+          qty,
+          image_url: getProductImage(product),
+          brand: product.brand,
+        },
+      ];
     });
+    showToast(`Added "${cleanTitle(product.title || "Item")}" to bag`);
   };
 
-  const removeFromCart = (pid: string) => {
-    setCart((prev) => prev.filter((item) => item.product_id !== pid));
-  };
-
-  const handleSendChatMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!chatInput.trim()) return;
-
-    const userText = chatInput.trim();
-    setChatInput("");
-    setChatMessages((prev) => [...prev, { sender: "user", text: userText }]);
-    setIsAssistantThinking(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/assistant/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userText, user_id: persona, session_id: "sess_nextjs_chat" }),
-      });
-      const data = await res.json();
-      setChatMessages((prev) => [
-        ...prev,
-        { sender: "assistant", text: data.reply, toolCalled: data.tool_called },
-      ]);
-    } catch (err) {
-      setChatMessages((prev) => [
-        ...prev,
-        { sender: "assistant", text: "Maaf kijiye, system mein temporary network issue hai. Dobara koshish karein." },
-      ]);
-    } finally {
-      setIsAssistantThinking(false);
-    }
-  };
-
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-
-  // SVG Forecast Curve Generator
-  const renderForecastCurve = (p10: number[], p50: number[], p90: number[]) => {
-    if (!p50 || p50.length === 0) return null;
-    const w = 380;
-    const h = 100;
-    const maxVal = Math.max(...p90) * 1.15 || 10;
-    const step = w / (p50.length - 1);
-
-    const getPoints = (arr: number[]) => arr.map((val, idx) => `${idx * step},${h - (val / maxVal) * h}`).join(" ");
-    const areaPoints = p90
-      .map((val, idx) => `${idx * step},${h - (val / maxVal) * h}`)
-      .concat(p10.slice().reverse().map((val, idx) => `${(p10.length - 1 - idx) * step},${h - (val / maxVal) * h}`))
-      .join(" ");
-
-    return (
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full overflow-visible">
-        <polygon points={areaPoints} fill="rgba(0, 240, 255, 0.12)" />
-        <polyline points={getPoints(p50)} fill="none" stroke="#00f0ff" strokeWidth="2.5" />
-        <polyline points={getPoints(p90)} fill="none" stroke="#f59e0b" strokeDasharray="3,3" strokeWidth="1.5" />
-        <polyline points={getPoints(p10)} fill="none" stroke="rgba(255,255,255,0.3)" strokeDasharray="3,3" strokeWidth="1.5" />
-      </svg>
+  const handleUpdateQty = (productId: string, delta: number) => {
+    setCartItems((prev) =>
+      prev
+        .map((item) => {
+          if (item.product_id === productId) {
+            const newQty = item.qty + delta;
+            return newQty > 0 ? { ...item, qty: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[]
     );
   };
 
+  const handleRemoveFromCart = (productId: string) => {
+    setCartItems((prev) => prev.filter((i) => i.product_id !== productId));
+  };
+
+  const handleToggleWishlist = (productId: string) => {
+    setWishlist((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
+
+  // Persona switch from Studio
+  const handleSelectPersona = (personaId: string, name: string) => {
+    setActivePersona(personaId);
+    setActivePersonaName(name);
+    showToast(`Shopping as ${name} · Re-ranked with Two-Tower embeddings`);
+  };
+
+  // Categories definition
+  const categories = [
+    "All",
+    "Lawn & Festive",
+    "Men's Kurta",
+    "Pure Audio & Tech",
+    "Artisanal Fragrance",
+    "Modern Living",
+    "Organic Pantry",
+  ];
+
   return (
-    <div className="min-h-screen text-[#f0f4f8] selection:bg-[#00f0ff] selection:text-black">
-      {/* ------------------------------------------------------------- */}
-      {/* TOP BAR / DIRECTOR'S CUT HEADER */}
-      {/* ------------------------------------------------------------- */}
-      <header className="sticky top-0 z-50 bg-[#090c10]/90 backdrop-blur-md border-b border-white/10 px-6 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-[#00f0ff] bg-clip-text text-transparent">
-              ⚡ ShopKaro
-            </span>
-            <span className="brand-badge text-[10px]">Cinematic UI 2.0</span>
-          </div>
-          <div className="hidden md:flex items-center gap-2 text-xs font-mono text-[#10b981] bg-[#10b981]/10 px-2.5 py-1 rounded-full border border-[#10b981]/30">
-            <span className="status-dot"></span>
-            <span>AI Serving &lt; 40ms</span>
-          </div>
-        </div>
+    <div className="min-h-screen bg-bone text-ink relative flex flex-col font-sans">
+      {/* 0. Top Hairline Parallax Scroll Progress */}
+      <motion.div
+        style={{ scaleX: scrollYProgress }}
+        className="fixed top-0 left-0 right-0 h-[3px] bg-terracotta origin-left z-50 pointer-events-none"
+      />
 
-        {/* View Switcher Tabs */}
-        <nav className="flex items-center gap-1 bg-[#0f141c] p-1 rounded-lg border border-white/10">
-          <button
-            onClick={() => setActiveView("customer")}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-2 transition-all ${
-              activeView === "customer"
-                ? "bg-[#00f0ff]/15 text-white border border-[#00f0ff]/40 shadow-[0_0_20px_rgba(0,240,255,0.25)]"
-                : "text-slate-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            <span>1. Storefront</span>
-            <kbd className="kbd-badge">1</kbd>
-          </button>
-          <button
-            onClick={() => setActiveView("operations")}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-2 transition-all ${
-              activeView === "operations"
-                ? "bg-[#00f0ff]/15 text-white border border-[#00f0ff]/40 shadow-[0_0_20px_rgba(0,240,255,0.25)]"
-                : "text-slate-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            <span>2. Operations</span>
-            <kbd className="kbd-badge">2</kbd>
-          </button>
-          <button
-            onClick={() => setActiveView("management")}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-2 transition-all ${
-              activeView === "management"
-                ? "bg-[#00f0ff]/15 text-white border border-[#00f0ff]/40 shadow-[0_0_20px_rgba(0,240,255,0.25)]"
-                : "text-slate-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            <span>3. Management</span>
-            <kbd className="kbd-badge">3</kbd>
-          </button>
-          <button
-            onClick={() => setActiveView("assistant")}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-2 transition-all ${
-              activeView === "assistant"
-                ? "bg-[#00f0ff]/15 text-white border border-[#00f0ff]/40 shadow-[0_0_20px_rgba(0,240,255,0.25)]"
-                : "text-slate-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            <span>4. Assistant</span>
-            <kbd className="kbd-badge">4</kbd>
-          </button>
-        </nav>
-
-        {/* Persona Switcher & Cart */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[#0f141c] px-3 py-1.5 rounded-lg border border-white/10 text-xs">
-            <span className="text-slate-400 font-bold uppercase text-[10px]">User:</span>
-            <select
-              value={persona}
-              onChange={(e) => setPersona(e.target.value)}
-              className="bg-transparent text-white font-medium outline-none cursor-pointer"
-            >
-              <option value="USR-00001" className="bg-[#0f141c] text-white">
-                Tariq (Tech Enthusiast • Karachi)
-              </option>
-              <option value="USR-00002" className="bg-[#0f141c] text-white">
-                Fatima (Eid Lawn Shopper • Lahore)
-              </option>
-              <option value="cold_start" className="bg-[#0f141c] text-white">
-                New Visitor (Cold-Start Mode)
-              </option>
-            </select>
-          </div>
-
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 text-xs font-semibold transition-all"
-          >
-            <ShoppingCart className="w-4 h-4 text-[#00f0ff]" />
-            <span>Cart</span>
-            <span className="bg-[#00f0ff] text-black font-extrabold text-[10px] px-1.5 py-0.5 rounded-full">
-              {cart.reduce((sum, item) => sum + item.qty, 0)}
-            </span>
-          </button>
-        </div>
-      </header>
-
-      {/* ------------------------------------------------------------- */}
-      {/* MAIN CONTAINER */}
-      {/* ------------------------------------------------------------- */}
-      <main className="max-w-[1480px] mx-auto p-6">
-        {/* Universal Search Hero */}
-        <div className="relative mb-8 bg-gradient-to-b from-[#141a26]/90 to-[#0f141c]/70 border border-white/10 rounded-2xl p-6 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-[#00f0ff] to-transparent" />
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-bold">Multilingual & UrduLish Semantic Search</h2>
-              <p className="text-xs text-slate-400">
-                BM25 Token Inverted Index + Dense Vector Embeddings with Reciprocal Rank Fusion (RRF)
-              </p>
+      {/* 1. Slim Announcement Bar */}
+      {showAnnouncement && (
+        <div className="bg-forest text-bone text-xs py-2 px-4 transition-all border-b border-forest-light relative z-30">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex-1 text-center font-medium tracking-wide">
+              <span>Free delivery across Pakistan over Rs. 3,000</span>
+              <span className="mx-2 opacity-60">·</span>
+              <span>Cash on Delivery (COD)</span>
+              <span className="mx-2 opacity-60">·</span>
+              <span className="text-saffron">Eid Edit '26 Now Live</span>
             </div>
-            <div className="text-xs font-mono text-[#00f0ff] bg-[#00f0ff]/10 px-3 py-1 rounded-full border border-[#00f0ff]/20">
-              NDCG@10: <strong>0.9486</strong> (+11.8% vs BM25)
-            </div>
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSearch(searchQuery);
-            }}
-            className="relative flex items-center"
-          >
-            <Search className="absolute left-4 w-4 h-4 text-slate-400" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Try Pakistani queries: 'eid ke liye lawn suit under 5000' or 'laptop for coding under 1.5 lac' (Press '/' to focus)..."
-              className="w-full bg-[#0c0f14]/90 border border-white/10 focus:border-[#00f0ff] rounded-xl pl-12 pr-28 py-3.5 text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:shadow-[0_0_20px_rgba(0,240,255,0.15)]"
-            />
             <button
-              type="submit"
-              disabled={isSearching}
-              className="absolute right-2 px-5 py-2 bg-[#00f0ff] hover:bg-cyan-400 text-black font-bold text-xs rounded-lg transition-all"
+              onClick={() => setShowAnnouncement(false)}
+              className="text-sand/70 hover:text-bone p-0.5 rounded transition-colors"
+              aria-label="Dismiss banner"
             >
-              {isSearching ? "Searching..." : "Search"}
-            </button>
-          </form>
-
-          {/* Quick Prompts */}
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-semibold">Quick Roman Urdu:</span>
-            {[
-              "eid ke liye lawn suit under 5000",
-              "laptop for coding under 1.5 lac",
-              "shaadi ke liye red lehenga 20 hazaar tak",
-              "bachon ke liye school bag",
-              "ammi ke liye embroidered shawl",
-            ].map((q) => (
-              <button
-                key={q}
-                onClick={() => {
-                  setSearchQuery(q);
-                  handleSearch(q);
-                }}
-                className="text-[11px] bg-white/5 hover:bg-[#00f0ff]/10 hover:text-[#00f0ff] hover:border-[#00f0ff]/30 text-slate-300 border border-white/10 px-2.5 py-1 rounded-full transition-all"
-              >
-                "{q}"
-              </button>
-            ))}
-          </div>
-
-          {/* Search Results Display */}
-          {searchResults.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-white/10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-xs text-slate-300">
-                  {parsedIntent && (
-                    <span>
-                      Parsed Intent: Category: <code>{parsedIntent.category || "Any"}</code> | Max Budget:{" "}
-                      <code>{parsedIntent.max_price ? `PKR ${parsedIntent.max_price.toLocaleString()}` : "None"}</code> | Occasion:{" "}
-                      <code>{parsedIntent.occasion || "General"}</code>
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs font-mono text-[#00f0ff]">{searchResults.length} items found ({searchLatency} ms)</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                {searchResults.slice(0, 4).map((p) => (
-                  <ProductCard key={p.product_id} product={p} onPeek={openPeek} onAddCart={addToCart} />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ============================================================= */}
-        {/* VIEW 1: CUSTOMER STOREFRONT */}
-        {/* ============================================================= */}
-        {activeView === "customer" && (
-          <div className="space-y-6">
-            {/* Persona Greeting Banner */}
-            <div className="bg-gradient-to-r from-[#141a26]/90 to-[#0f141c]/50 border border-white/10 rounded-xl p-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-extrabold text-white">
-                  {persona === "USR-00001"
-                    ? "Khush-Amdeed, Tariq (Karachi)"
-                    : persona === "USR-00002"
-                    ? "Khush-Amdeed, Fatima (Lahore)"
-                    : "Khush-Amdeed, Guest Shopper"}
-                </h2>
-                <div className="text-xs text-slate-400 mt-1">
-                  Storefront Persona:{" "}
-                  <strong className="text-[#00f0ff]">
-                    {persona === "USR-00001"
-                      ? "Tech Enthusiast (Gadgets & Fast Chargers)"
-                      : persona === "USR-00002"
-                      ? "Eid Lawn & Festive Shopper (Pret & Dupattas)"
-                      : "New Cold-Start Visitor (Curated Catalogs)"}
-                  </strong>
-                </div>
-              </div>
-              <div className="text-right text-xs font-mono">
-                <div>Model: <span className="text-[#10b981] font-bold">{recModel}</span></div>
-                <div className="text-slate-400">
-                  Latency: <span className="text-[#00f0ff]">{recLatency} ms</span> ({isRecCached ? "Cached" : "Live"})
-                </div>
-              </div>
-            </div>
-
-            {/* Recommendations Grid */}
-            <div>
-              <div className="flex items-baseline justify-between mb-4 pb-2 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#00f0ff]" />
-                    <span>Personalized For You</span>
-                  </h3>
-                  <span className="brand-badge text-[10px]">Two-Tower + Business Rules</span>
-                </div>
-                <span className="text-xs text-slate-400">
-                  Enforces out-of-stock removal, brand diversity & festival boost
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                {recs.map((p) => (
-                  <ProductCard key={p.product_id} product={p} onPeek={openPeek} onAddCart={addToCart} />
-                ))}
-              </div>
-            </div>
-
-            {/* Frequently Bought Together Bundle */}
-            {boughtTogether.items.length > 0 && (
-              <div className="bg-[#141a26]/70 border border-white/10 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-[#f59e0b]" />
-                    <span>Frequently Bought Together (Association Rules)</span>
-                  </h4>
-                  <span className="brand-badge text-[#f59e0b] border-[#f59e0b]/30">Market Basket Analysis</span>
-                </div>
-                <p className="text-xs text-slate-300 bg-[#00f0ff]/5 border-l-2 border-[#00f0ff] p-3 rounded mb-4">
-                  {boughtTogether.explanation}
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {boughtTogether.items.map((item) => (
-                    <div
-                      key={item.product_id}
-                      className="bg-white/[0.03] p-3 rounded-lg border border-white/10 flex items-center justify-between gap-3"
-                    >
-                      <div>
-                        <div className="font-semibold text-xs text-white truncate max-w-[180px]">{item.title}</div>
-                        <div className="text-[11px] text-slate-400">{item.category} • {item.brand}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="num font-bold text-xs text-[#00f0ff]">PKR {item.price.toLocaleString()}</div>
-                        <button
-                          onClick={() => addToCart(item)}
-                          className="mt-1 text-[10px] bg-[#00f0ff] hover:bg-cyan-400 text-black font-bold px-2 py-0.5 rounded transition-all"
-                        >
-                          + Cart
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ============================================================= */}
-        {/* VIEW 2: OPERATIONS & DEMAND FORECASTING */}
-        {/* ============================================================= */}
-        {activeView === "operations" && (
-          <div className="space-y-6">
-            {/* KPI Row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-[#141a26]/70 border border-white/10 rounded-xl p-4">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Global LightGBM WAPE</div>
-                <div className="num text-2xl font-extrabold text-[#10b981] mt-1">21.43%</div>
-                <div className="text-[11px] text-slate-400 mt-1">Retail Supply Chain Standard</div>
-              </div>
-              <div className="bg-[#141a26]/70 border border-white/10 rounded-xl p-4">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Seasonal Naive Baseline</div>
-                <div className="num text-2xl font-extrabold text-[#f43f5e] mt-1">98.51%</div>
-                <div className="text-[11px] text-[#10b981] mt-1 font-semibold">Outperformed by 77.1 pts</div>
-              </div>
-              <div className="bg-[#141a26]/70 border border-white/10 rounded-xl p-4">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Eid Surge Multiplier</div>
-                <div className="num text-2xl font-extrabold text-[#f59e0b] mt-1">3.8x - 4.5x</div>
-                <div className="text-[11px] text-slate-400 mt-1">Lawn Suits & Beauty Festive Peak</div>
-              </div>
-              <div className="bg-[#141a26]/70 border border-white/10 rounded-xl p-4">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Prevented Dead Stock</div>
-                <div className="num text-2xl font-extrabold text-[#00f0ff] mt-1">PKR 38.4M</div>
-                <div className="text-[11px] text-slate-400 mt-1">184 Stockouts Prevented</div>
-              </div>
-            </div>
-
-            {/* Critical Stock-Out Alerts Table */}
-            <div className="bg-[#141a26]/70 border border-white/10 rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-[#f43f5e]" />
-                    <span>14-Day Critical Stock-Out Alerts</span>
-                  </h3>
-                  <p className="text-xs text-slate-400">Inventory &lt; P90 demand forecast over supplier lead time</p>
-                </div>
-                <span className="brand-badge bg-[#f43f5e]/15 text-[#f43f5e] border-[#f43f5e]/30">
-                  {stockoutAlerts.length} Risks Detected
-                </span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10 text-slate-400 bg-black/20">
-                      <th className="p-3">Product ID</th>
-                      <th className="p-3">Title</th>
-                      <th className="p-3">Category</th>
-                      <th className="p-3 text-right">Current Stock</th>
-                      <th className="p-3 text-right">P90 Forecast (14d)</th>
-                      <th className="p-3 text-right">ROP</th>
-                      <th className="p-3">Urgency</th>
-                      <th className="p-3 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stockoutAlerts.slice(0, 6).map((a) => (
-                      <tr key={a.product_id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                        <td className="p-3 font-mono font-bold text-white">{a.product_id}</td>
-                        <td className="p-3 truncate max-w-[200px]">{a.title}</td>
-                        <td className="p-3 text-slate-400">{a.category}</td>
-                        <td className="p-3 text-right num text-[#f43f5e] font-bold">{a.current_stock}</td>
-                        <td className="p-3 text-right num text-[#f59e0b]">{a.p90_demand_14d}</td>
-                        <td className="p-3 text-right num font-bold">{a.reorder_point}</td>
-                        <td className="p-3">
-                          <span className="bg-[#f43f5e]/15 text-[#f43f5e] px-2 py-0.5 rounded text-[10px] font-bold">
-                            {a.urgency} ({a.days_remaining}d)
-                          </span>
-                        </td>
-                        <td className="p-3 text-right">
-                          <button
-                            onClick={() => alert(`Purchase Order initiated for ${a.recommended_reorder_qty} units of ${a.product_id}`)}
-                            className="bg-[#00f0ff] hover:bg-cyan-400 text-black text-[11px] font-bold px-2.5 py-1 rounded"
-                          >
-                            PO +{a.recommended_reorder_qty}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Pre-Festival Eid Stocking Plan */}
-            <div className="bg-[#141a26]/70 border border-white/10 rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Package className="w-4 h-4 text-[#f59e0b]" />
-                    <span>Pre-Festival Eid Stocking Plan (Top Items)</span>
-                  </h3>
-                  <p className="text-xs text-slate-400">Eliminating historical catastrophic lawn suit stockouts</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10 text-slate-400 bg-black/20">
-                      <th className="p-3">SKU</th>
-                      <th className="p-3">Title</th>
-                      <th className="p-3">Category</th>
-                      <th className="p-3 text-right">Current Stock</th>
-                      <th className="p-3">Surge Factor</th>
-                      <th className="p-3 text-right">Pre-Eid Target</th>
-                      <th className="p-3 text-right">Immediate Order</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preEidPlan.slice(0, 5).map((p) => (
-                      <tr key={p.product_id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                        <td className="p-3 font-mono font-bold text-white">{p.product_id}</td>
-                        <td className="p-3 truncate max-w-[200px]">{p.title}</td>
-                        <td className="p-3 text-slate-400">{p.category}</td>
-                        <td className="p-3 text-right num">{p.current_stock}</td>
-                        <td className="p-3 font-bold text-[#00f0ff]">{p.festival_surge_multiplier}</td>
-                        <td className="p-3 text-right num font-bold">{p.pre_festival_recommended_stock}</td>
-                        <td className="p-3 text-right num font-bold text-[#10b981]">+{p.units_to_order_immediately}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================= */}
-        {/* VIEW 3: MANAGEMENT & A/B EXPERIMENT */}
-        {/* ============================================================= */}
-        {activeView === "management" && (
-          <div className="space-y-6">
-            {/* Executive A/B Test Card */}
-            {abReport && (
-              <div className="bg-gradient-to-br from-[#141a26] to-[#0f141c] border border-[#00f0ff]/30 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,240,255,0.1)]">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <span className="brand-badge bg-[#10b981]/20 text-[#10b981] border-[#10b981]/40 text-xs font-bold">
-                      DECISION: {abReport.decision}
-                    </span>
-                    <h3 className="text-xl font-extrabold text-white mt-2">
-                      Experiment EXP-2026-RECSYS-01: Recommendation Uplift Analysis
-                    </h3>
-                  </div>
-                  <div className="text-right text-xs">
-                    <div className="text-slate-400 font-mono">Sample Size: <strong className="text-white">100,000 Visitors</strong></div>
-                    <div className="text-[#10b981] font-semibold mt-1">p &lt; 0.0001 (z = 6.01)</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                  <div className="bg-white/[0.03] p-4 rounded-xl border border-white/10">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Conversion Rate (CVR) Lift</div>
-                    <div className="num text-2xl font-extrabold text-[#10b981] mt-1">
-                      +{abReport.primary_metric_1_conversion_rate?.relative_lift_pct}%
-                    </div>
-                    <div className="text-[11px] text-slate-400 mt-1">
-                      Control: {abReport.primary_metric_1_conversion_rate?.control}% → Treatment: {abReport.primary_metric_1_conversion_rate?.treatment}%
-                    </div>
-                  </div>
-
-                  <div className="bg-white/[0.03] p-4 rounded-xl border border-white/10">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Revenue Per Visitor (RPV)</div>
-                    <div className="num text-2xl font-extrabold text-[#00f0ff] mt-1">
-                      +{abReport.primary_metric_2_revenue_per_visitor?.relative_lift_pct}%
-                    </div>
-                    <div className="text-[11px] text-slate-400 mt-1">
-                      +PKR {abReport.primary_metric_2_revenue_per_visitor?.incremental_revenue_per_visitor_pkr} / visitor
-                    </div>
-                  </div>
-
-                  <div className="bg-white/[0.03] p-4 rounded-xl border border-white/10">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Annual Incremental Revenue</div>
-                    <div className="num text-2xl font-extrabold text-[#f59e0b] mt-1">
-                      PKR {abReport.financial_impact?.estimated_incremental_annual_revenue_pkr?.toLocaleString()}
-                    </div>
-                    <div className="text-[11px] text-slate-400 mt-1">14.2x ROI on AI Cloud Spend</div>
-                  </div>
-
-                  <div className="bg-white/[0.03] p-4 rounded-xl border border-white/10">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Latency Guardrail SLA</div>
-                    <div className="num text-2xl font-extrabold text-[#10b981] mt-1">
-                      {abReport.guardrail_metrics?.treatment_mean_latency_ms} ms
-                    </div>
-                    <div className="text-[11px] text-slate-400 mt-1">P95 = 51.8ms (&lt; 100ms: PASSED)</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Customer Segments */}
-            <div>
-              <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-[#00f0ff]" />
-                  <span>Customer Segmentation (RFM + K-Means)</span>
-                </h3>
-                <span className="text-xs text-slate-400">Automated persona clustering with retention playbooks</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {segments.map((s) => (
-                  <div key={s.segment_id} className="bg-[#141a26]/70 border border-white/10 rounded-xl p-4">
-                    <div className="flex items-baseline justify-between mb-2">
-                      <div className="text-sm font-bold text-white">{s.name}</div>
-                      <span className="brand-badge text-[10px]">{s.user_share_pct}% of Users</span>
-                    </div>
-                    <p className="text-xs text-slate-300 mb-3">{s.description}</p>
-                    <div className="bg-[#00f0ff]/10 border-l-2 border-[#00f0ff] p-2.5 rounded text-xs text-white">
-                      <strong>Marketing Action:</strong> {s.marketing_action}
-                    </div>
-                    <div className="flex gap-4 mt-3 text-[11px] font-mono text-slate-400">
-                      <span>Avg Spend: PKR {s.avg_monetary_pkr?.toLocaleString()}</span>
-                      <span>Recency: {s.avg_recency_days}d</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Review Intelligence Heatmap */}
-            {aspects && (
-              <div className="bg-[#141a26]/70 border border-white/10 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-[#10b981]" />
-                    <span>Review Aspect Sentiment Breakdown (UrduLish &amp; English)</span>
-                  </h3>
-                  <span className="text-xs text-slate-400">6 Aspect Dimensions</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                  {Object.entries(aspects).map(([name, data]: [string, any]) => (
-                    <div key={name} className="bg-white/[0.03] p-3 rounded-lg border border-white/10">
-                      <div className="flex justify-between items-center text-xs font-bold capitalize text-white mb-2">
-                        <span>{name}</span>
-                        <span className={data.positive_sentiment_pct >= 70 ? "text-[#10b981]" : "text-[#f43f5e]"}>
-                          {data.positive_sentiment_pct}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
-                        <div
-                          className="h-full bg-[#10b981]"
-                          style={{ width: `${data.positive_sentiment_pct}%` }}
-                        />
-                      </div>
-                      <div className="text-[10px] text-slate-400">{data.mention_count} reviews</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ============================================================= */}
-        {/* VIEW 4: URDULISH ASSISTANT AGENT */}
-        {/* ============================================================= */}
-        {activeView === "assistant" && (
-          <div className="bg-[#0f141c] border border-white/10 rounded-2xl h-[650px] flex flex-col overflow-hidden">
-            <div className="p-4 bg-[#141a26] border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="status-dot"></span>
-                <span className="text-sm font-bold text-white">ShopKaro UrduLish Assistant</span>
-              </div>
-              <div className="text-[11px] font-mono text-[#00f0ff] bg-[#00f0ff]/10 px-2 py-0.5 rounded">
-                Grounded Tool Calling Active (Zero Hallucination)
-              </div>
-            </div>
-
-            <div className="flex-1 p-5 overflow-y-auto space-y-4">
-              {chatMessages.map((m, idx) => (
-                <div
-                  key={idx}
-                  className={`max-w-[80%] p-3.5 rounded-xl text-sm leading-relaxed ${
-                    m.sender === "user"
-                      ? "ml-auto bg-[#00f0ff]/20 border border-[#00f0ff]/40 text-white"
-                      : "mr-auto bg-[#141a26] border border-white/10 text-slate-100"
-                  }`}
-                >
-                  {m.toolCalled && (
-                    <div className="text-[10px] font-mono text-[#00f0ff] bg-[#00f0ff]/10 px-2 py-0.5 rounded mb-2 inline-block">
-                      🔧 Tool: {m.toolCalled}()
-                    </div>
-                  )}
-                  <div className="whitespace-pre-line">{m.text}</div>
-                </div>
-              ))}
-              {isAssistantThinking && (
-                <div className="mr-auto bg-[#141a26] border border-white/10 p-3.5 rounded-xl text-xs text-slate-400 italic">
-                  Checking catalog and logistics tools...
-                </div>
-              )}
-              <div ref={chatBottomRef} />
-            </div>
-
-            {/* Quick Prompt Chips */}
-            <div className="px-4 py-2 bg-[#0c0f14] border-t border-white/10 flex gap-2 overflow-x-auto">
-              <span className="text-[11px] text-slate-400 self-center whitespace-nowrap">Try:</span>
-              {[
-                "Ammi ke liye Eid gift chahiye, 3000 tak.",
-                "ORD-98421 kahan tak pohncha?",
-                "PROD-00001 aur PROD-00002 ko compare karo",
-                "PROD-00005 ko cart mein daal do",
-              ].map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => {
-                    setChatInput(prompt);
-                  }}
-                  className="text-[11px] bg-white/5 hover:bg-[#00f0ff]/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded-full whitespace-nowrap"
-                >
-                  "{prompt}"
-                </button>
-              ))}
-            </div>
-
-            <form onSubmit={handleSendChatMessage} className="p-3 bg-[#141a26] border-t border-white/10 flex gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="UrduLish mein poochiye: 'Ammi ke liye Eid gift chahiye, 3000 tak'..."
-                className="flex-1 bg-[#0c0f14] border border-white/10 focus:border-[#00f0ff] rounded-lg px-4 py-2.5 text-sm text-white outline-none"
-              />
-              <button
-                type="submit"
-                disabled={isAssistantThinking}
-                className="bg-[#00f0ff] hover:bg-cyan-400 text-black font-bold px-5 py-2.5 rounded-lg text-xs"
-              >
-                Send
-              </button>
-            </form>
-          </div>
-        )}
-      </main>
-
-      {/* ------------------------------------------------------------- */}
-      {/* PEEK DRAWER (PRODUCT INSPECTION & SVG DEMAND CURVES) */}
-      {/* ------------------------------------------------------------- */}
-      <aside
-        className={`fixed top-0 right-0 h-full w-[440px] bg-[#0c1017]/95 backdrop-blur-xl border-l border-white/10 z-50 transform transition-transform duration-300 flex flex-col ${
-          peekPid ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="p-4 border-b border-white/10 flex items-center justify-between">
-          <div className="text-sm font-bold text-white">Product Intelligence Inspector</div>
-          <button onClick={() => setPeekPid(null)} className="text-slate-400 hover:text-white">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 p-5 overflow-y-auto space-y-5">
-          {isPeekLoading ? (
-            <div className="text-center py-20 text-slate-400 text-xs">Loading real-time metrics...</div>
-          ) : peekData ? (
-            <>
-              <div>
-                <h3 className="text-base font-bold text-white">{peekData.forecast?.title || peekPid}</h3>
-                <div className="text-xs text-slate-400 mt-1">
-                  {peekData.forecast?.category} • Current Stock:{" "}
-                  <strong className="text-[#10b981] font-mono">{peekData.forecast?.current_stock} units</strong>
-                </div>
-              </div>
-
-              {/* Inventory Control Parameters */}
-              <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/10 text-xs space-y-2">
-                <div className="text-[10px] uppercase font-bold text-slate-400">Inventory Parameters</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>Safety Stock: <strong className="num text-white">{peekData.forecast?.safety_stock}</strong></div>
-                  <div>Reorder Point (ROP): <strong className="num text-[#f59e0b]">{peekData.forecast?.reorder_point}</strong></div>
-                </div>
-              </div>
-
-              {/* Demand Forecast Curve */}
-              <div>
-                <div className="text-xs font-bold text-white mb-2">14-Day Demand Distribution (P10 / P50 / P90)</div>
-                <div className="h-28 bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-center">
-                  {renderForecastCurve(peekData.forecast?.p10, peekData.forecast?.p50, peekData.forecast?.p90)}
-                </div>
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                  <span>P10 (Floor)</span>
-                  <span className="text-[#00f0ff] font-bold">P50 Median</span>
-                  <span className="text-[#f59e0b]">P90 Peak</span>
-                </div>
-              </div>
-
-              {/* Review Intelligence */}
-              <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/10 text-xs">
-                <div className="text-[10px] uppercase font-bold text-[#00f0ff] mb-1">What Customers Say (Review NLP)</div>
-                <p className="text-slate-200 leading-relaxed">{peekData.reviews?.what_customers_say}</p>
-                <div className="mt-2 text-[11px] text-slate-400">
-                  Positive Sentiment: <strong className="text-[#10b981]">{peekData.reviews?.positive_pct}%</strong>
-                </div>
-              </div>
-
-              {/* Content-Based Similar Items */}
-              {peekData.similar.length > 0 && (
-                <div>
-                  <div className="text-xs font-bold text-white mb-2">Similar Items</div>
-                  <div className="space-y-2">
-                    {peekData.similar.map((s: any) => (
-                      <div
-                        key={s.product_id}
-                        className="bg-white/[0.02] p-2.5 rounded-lg border border-white/10 flex items-center justify-between text-xs"
-                      >
-                        <span className="text-white truncate max-w-[220px]">{s.title}</span>
-                        <span className="num font-bold text-[#00f0ff]">PKR {s.price?.toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : null}
-        </div>
-      </aside>
-
-      {/* ------------------------------------------------------------- */}
-      {/* CART MODAL */}
-      {/* ------------------------------------------------------------- */}
-      {isCartOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0f141c] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5 text-[#00f0ff]" />
-                <span>Your Cart ({cart.length} items)</span>
-              </h3>
-              <button onClick={() => setIsCartOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="max-h-60 overflow-y-auto space-y-2 mb-4">
-              {cart.length === 0 ? (
-                <div className="text-center py-8 text-xs text-slate-400">Your cart is currently empty.</div>
-              ) : (
-                cart.map((item) => (
-                  <div
-                    key={item.product_id}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.03] border border-white/5 text-xs"
-                  >
-                    <div>
-                      <div className="font-semibold text-white truncate max-w-[200px]">{item.title}</div>
-                      <div className="text-[10px] text-slate-400">{item.product_id} • Qty: {item.qty}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="num font-bold text-[#00f0ff]">PKR {(item.price * item.qty).toLocaleString()}</div>
-                      <button
-                        onClick={() => removeFromCart(item.product_id)}
-                        className="text-[10px] text-[#f43f5e] hover:underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="pt-3 border-t border-white/10 flex justify-between items-baseline mb-4">
-              <span className="text-xs text-slate-400">Total (PKR):</span>
-              <span className="num text-xl font-extrabold text-[#00f0ff]">PKR {cartTotal.toLocaleString()}</span>
-            </div>
-
-            <div className="text-[11px] text-slate-400 bg-white/5 p-2.5 rounded-lg mb-4">
-              🚚 Free TCS Logistics express delivery across Pakistan on orders above PKR 2,500. Cash on Delivery (COD) and JazzCash accepted.
-            </div>
-
-            <button
-              onClick={() => {
-                alert("Order confirmed via TCS Logistics with Cash on Delivery!");
-                setCart([]);
-                setIsCartOpen(false);
-              }}
-              className="w-full bg-[#00f0ff] hover:bg-cyan-400 text-black font-extrabold py-3 rounded-xl text-xs transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)]"
-            >
-              Checkout (COD / JazzCash)
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       )}
+
+      {/* 2. Sticky Editorial Header */}
+      <header
+        className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+          isScrolled
+            ? "bg-paper/95 backdrop-blur-md border-b border-sand shadow-warm-sm py-3"
+            : "bg-paper/90 backdrop-blur-sm border-b border-sand/60 py-3.5 sm:py-4"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+          {/* Logo Wordmark & Suite Navigation */}
+          <div className="flex items-center gap-6">
+            <Link href="/" className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-ink group whitespace-nowrap flex items-baseline">
+              <span>ShopKaro</span><span className="text-terracotta transition-transform group-hover:scale-125">.</span>
+            </Link>
+
+            <nav className="hidden lg:flex items-center gap-3.5 text-xs font-medium">
+              <Link href="/assistant" className="text-ink-soft hover:text-ink transition-colors">AI Assistant</Link>
+              <Link href="/operations" className="text-ink-soft hover:text-ink transition-colors">Demand Radar</Link>
+              <Link href="/executive" className="text-ink-soft hover:text-ink transition-colors">Executive Suite</Link>
+              <Link href="/screening" className="text-ink-soft hover:text-ink transition-colors">Screening Room</Link>
+            </nav>
+          </div>
+
+          {/* Centered Search Pill */}
+          <div className="flex-1 max-w-sm hidden md:block">
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="w-full flex items-center justify-between px-4 py-2 rounded-pill bg-bone/70 border border-sand hover:border-sand/80 shadow-warm-sm text-left transition-all hover:bg-paper"
+            >
+              <div className="flex items-center gap-2.5 text-xs text-ink-soft">
+                <Search className="w-4 h-4 text-terracotta" />
+                <span className="truncate">{searchPlaceholders[placeholderIndex]}</span>
+              </div>
+              <kbd className="text-[10px] font-mono text-ink-soft bg-sand/60 px-1.5 py-0.5 rounded border border-sand">
+                /
+              </kbd>
+            </button>
+          </div>
+
+          {/* Right Actions: Search Mobile, Ask Assistant, Shortcuts, Wishlist, Cart */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/assistant"
+              className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-pill bg-paper border border-sand hover:border-terracotta text-xs font-medium text-ink transition-all shadow-sm group"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-terracotta ring-2 ring-terracotta/20 animate-pulse" />
+              <span className="tracking-wide">AI Concierge</span>
+            </Link>
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="md:hidden p-2 rounded-full hover:bg-sand/40 text-ink-soft hover:text-ink transition-colors"
+              aria-label="Search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={() => setIsShortcutOpen(true)}
+              className="hidden sm:flex p-2 rounded-full hover:bg-sand/40 text-ink-soft hover:text-ink transition-colors"
+              title="Keyboard Shortcuts (?)"
+              aria-label="Shortcuts"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={() => showToast("Wishlist saved items: " + wishlist.length)}
+              className="p-2 rounded-full hover:bg-sand/40 text-ink-soft hover:text-terracotta transition-colors relative"
+              aria-label="Wishlist"
+            >
+              <Heart className={`w-5 h-5 ${wishlist.length > 0 ? "fill-terracotta text-terracotta" : ""}`} />
+              {wishlist.length > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-terracotta text-paper text-[10px] font-bold flex items-center justify-center">
+                  {wishlist.length}
+                </span>
+              )}
+            </button>
+
+            {/* Shopping Bag Button */}
+            <motion.button
+              whileTap={{ scale: 0.94 }}
+              onClick={() => setIsCartOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-pill bg-ink text-paper hover:bg-ink-soft transition-all shadow-sm"
+              aria-label="Shopping Bag"
+            >
+              <ShoppingCart className="w-4 h-4 text-paper" />
+              <span className="text-xs font-semibold">
+                {cartItems.reduce((acc, i) => acc + i.qty, 0)}
+              </span>
+            </motion.button>
+          </div>
+        </div>
+      </header>
+
+      {/* 3. Hero Section (Warm, Tactile, Art-Directed Parallax Stage) */}
+      <section className="relative pt-6 pb-16 md:pt-12 md:pb-24 overflow-hidden">
+        {/* Parallax soft radial background washes */}
+        <motion.div
+          style={{ y: heroBgOrb1Y }}
+          className="absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full bg-roseclay/25 blur-3xl pointer-events-none -z-10"
+        />
+        <motion.div
+          style={{ y: heroBgOrb2Y }}
+          className="absolute bottom-10 left-10 w-[400px] h-[400px] rounded-full bg-saffron/20 blur-3xl pointer-events-none -z-10"
+        />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            {/* Left: Editorial Headline & Dual CTAs (7 Cols) */}
+            <motion.div
+              initial={false}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:col-span-7 space-y-6"
+            >
+              {/* Editorial Season Washi Tape Sticker */}
+              <WashiTapeSticker text="✦ EID EDIT '26 · ARTISANAL RESERVE ✦" />
+
+              {/* Display Headline */}
+              <h1
+                className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight text-ink leading-[1.05]"
+              >
+                Everything you love,{" "}
+                <span className="relative inline-block">
+                  <span className="italic font-normal font-serif text-terracotta">found</span>
+                  {/* Subtle hand-drawn terracotta SVG curve beneath "found" */}
+                  <svg
+                    className="absolute -bottom-2 left-0 w-full h-3 text-terracotta/70"
+                    viewBox="0 0 100 12"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M2 9C25 3 75 3 98 9"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>{" "}
+                before you search.
+              </h1>
+
+              {/* Poetic Subheading */}
+              <p
+                className="text-base sm:text-lg text-ink-soft leading-relaxed max-w-xl font-normal"
+              >
+                Curated apparel, sound, and home craftsmanship tailored to the Pakistani lifestyle. Powered by Two-Tower neural intelligence, styled like a luxury Lahore concept studio.
+              </p>
+
+              {/* Dual CTAs */}
+              <div
+                className="flex flex-wrap items-center gap-4 pt-2"
+              >
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  onClick={() => {
+                    const el = document.getElementById("picked-for-you");
+                    el?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="px-8 py-3.5 rounded-pill bg-terracotta hover:bg-terracotta-deep text-paper font-medium text-sm transition-colors duration-200 shadow-sm hover:shadow-warm flex items-center gap-2 group"
+                >
+                  <span>Shop for you</span>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  onClick={() => {
+                    const el = document.getElementById("trending-grid");
+                    el?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="px-8 py-3.5 rounded-pill border border-ink text-ink hover:bg-ink hover:text-paper font-medium text-sm transition-colors duration-200"
+                >
+                  Browse categories
+                </motion.button>
+              </div>
+
+              {/* Trust Signals */}
+              <div
+                className="pt-6 border-t border-sand/70 grid grid-cols-3 gap-3 text-xs text-ink-soft"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-terracotta shrink-0" />
+                  <span>Free Shipping &gt; Rs. 3,000</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-sage-deep shrink-0" />
+                  <span>Cash on Delivery (COD)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-saffron-deep shrink-0" />
+                  <span>100% Authentic Ateliers</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right: 3D Product Stage & Ambient Orbit (5 Cols) with Parallax */}
+            <motion.div
+              initial={false}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.9, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              style={{ y: heroStageY, scale: heroStageScale }}
+              className="lg:col-span-5 relative flex items-center justify-center"
+            >
+              {/* Plinth Base */}
+              <div className="relative w-full max-w-md aspect-square rounded-full bg-sand/30 border border-sand/60 flex items-center justify-center p-8 shadow-warm-lg">
+                {/* Rotating Soft Light Ring */}
+                <div className="absolute inset-4 rounded-full border border-dashed border-sand/90 animate-spin-slow pointer-events-none" />
+
+                {/* Hero Featured Card with 3D Tilt Effect */}
+                <TiltCard maxTilt={9} className="w-64 sm:w-72 aspect-editorial rounded-2xl overflow-hidden bg-paper border border-sand shadow-warm-lg z-10">
+                  <img
+                    src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80"
+                    alt="Bareeze Festive Chiffon"
+                    className="w-full h-full object-cover object-center"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 text-paper space-y-1">
+                    <span className="text-[10px] uppercase font-semibold text-saffron tracking-wider">
+                      Bareeze · Exclusive Edit
+                    </span>
+                    <h3 className="font-display text-base font-medium leading-snug">
+                      Mulberry Chiffon Embroidered Suit
+                    </h3>
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-[11px] font-semibold text-paper/80 font-sans">Rs.</span>
+                        <span className="font-sans text-sm font-bold text-paper tabular-nums tracking-tight">
+                          14,990
+                        </span>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() =>
+                          handleAddToCart({
+                            product_id: "HERO-BAREEZE-01",
+                            title: "Bareeze Mulberry Chiffon Embroidered Suit",
+                            price: 14990,
+                            brand: "Bareeze",
+                            image_url:
+                              "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
+                          })
+                        }
+                        className="px-3 py-1 rounded-full bg-terracotta text-paper text-xs font-medium hover:bg-terracotta-deep transition-colors"
+                      >
+                        Quick Add
+                      </motion.button>
+                    </div>
+                  </div>
+                </TiltCard>
+
+                {/* Tactile Editorial Stickers with Unique Geometric & Organic Shapes */}
+                <HeroStarburstSticker yTransform={badgeTopY} />
+                <HeroLuggageTagSticker yTransform={badgeBottomY} />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Category Ribbon (Tactile Horizontal Scroll with Stagger Animation) */}
+      <section className="py-8 bg-paper/60 border-y border-sand/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-xl font-medium text-ink">
+              Tactile Departments
+            </h2>
+            <span className="text-xs text-ink-soft font-mono">
+              Curated across 50,000 SKUs
+            </span>
+          </div>
+
+          <motion.div
+            initial={false}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-1"
+          >
+            {[
+              {
+                name: "Women's Lawn & Festive",
+                sub: "Bareeze, Khaadi, Sapphire",
+                img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=400&q=80",
+                cat: "Lawn & Festive",
+              },
+              {
+                name: "Men's Kurta & Waistcoat",
+                sub: "Junaid Jamshed, Outfitters",
+                img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80",
+                cat: "Men's Kurta",
+              },
+              {
+                name: "Pure Audio & Smart Tech",
+                sub: "Anker, Samsung, Apple",
+                img: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=400&q=80",
+                cat: "Pure Audio & Tech",
+              },
+              {
+                name: "Artisanal Fragrance & Oud",
+                sub: "Royal Oud, Jasmine, Amber",
+                img: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=400&q=80",
+                cat: "Artisanal Fragrance",
+              },
+              {
+                name: "Modern Living & Kitchen",
+                sub: "Dawlance, Westpoint, Habitt",
+                img: "https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=400&q=80",
+                cat: "Modern Living",
+              },
+              {
+                name: "Gourmet & Organic Pantry",
+                sub: "Super Kernel, Shan, Vital Tea",
+                img: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80",
+                cat: "Organic Pantry",
+              },
+            ].map((tile, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ y: -5, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => {
+                  handleSelectCategory(tile.cat);
+                  showToast(`Browsing ${tile.name}`);
+                  const el = document.getElementById("trending-grid");
+                  el?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="group shrink-0 w-60 p-3 rounded-2xl bg-paper border border-sand hover:border-terracotta cursor-pointer transition-colors shadow-warm-sm flex items-center gap-3"
+              >
+                <img
+                  src={tile.img}
+                  alt={tile.name}
+                  className="w-14 h-16 rounded-xl object-cover bg-sand/40 border border-sand/60 group-hover:scale-105 transition-transform"
+                />
+                <div className="min-w-0">
+                  <div className="font-display text-sm font-medium text-ink truncate group-hover:text-terracotta transition-colors">
+                    {tile.name}
+                  </div>
+                  <div className="text-[11px] text-ink-soft truncate mt-0.5">
+                    {tile.sub}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 5. "Picked for You" AI Personalized Rail */}
+      <section id="picked-for-you" className="py-14 sm:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <motion.div
+            initial={false}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
+          >
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-terracotta">
+                <span className="w-1.5 h-1.5 rounded-full bg-terracotta" />
+                <span>Curated For Your Profile</span>
+              </div>
+              <h2 className="font-display text-3xl sm:text-4xl font-medium text-ink mt-1">
+                Picked for you
+              </h2>
+              <p className="text-xs sm:text-sm text-ink-soft mt-1">
+                Styled for your aesthetic: <strong className="text-ink">{activePersonaName}</strong>
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsStudioOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs text-ink-soft hover:text-terracotta font-medium transition-colors"
+            >
+              <span>Style Profile: {activePersonaName}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+
+          {/* Personalized Products Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {personalizedRecs.slice(0, 4).map((prod, idx) => {
+              const friendlyTitle = cleanTitle(prod.title);
+              const img = getProductImage(prod);
+              const isFav = wishlist.includes(prod.product_id);
+
+              return (
+                <motion.div
+                  key={prod.product_id || idx}
+                  initial={false}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                >
+                  <TiltCard maxTilt={6} className="h-full">
+                    <div className="group relative flex flex-col justify-between h-full rounded-card bg-paper border border-sand p-3.5 shadow-warm-sm hover:shadow-warm transition-shadow">
+                      {/* Image container 4:5 ratio */}
+                      <div className="relative aspect-editorial w-full overflow-hidden rounded-xl bg-bone/40 border border-sand/60">
+                        <img
+                          src={img}
+                          alt={friendlyTitle}
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                        />
+
+                        {/* Tactile Multi-Shape Card Sticker */}
+                        <ProductCardSticker category={prod.category} title={prod.title} index={idx} />
+
+                        {/* Wishlist Button with Spring Tap */}
+                        <motion.button
+                          whileTap={{ scale: 0.8 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleWishlist(prod.product_id);
+                          }}
+                          className="absolute top-2.5 right-2.5 p-2 rounded-full bg-paper/90 border border-sand text-ink-soft hover:text-terracotta shadow-sm transition-colors"
+                          title="Add to Wishlist"
+                        >
+                          <Heart
+                            className={`w-3.5 h-3.5 transition-colors ${
+                              isFav ? "fill-terracotta text-terracotta" : ""
+                            }`}
+                          />
+                        </motion.button>
+
+                        {/* Quick View Button on Hover */}
+                        <button
+                          onClick={() => setSelectedProductModal(prod)}
+                          className="absolute inset-x-3 bottom-3 py-2 rounded-pill bg-paper/95 backdrop-blur-md border border-sand text-xs font-medium text-ink hover:bg-paper transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-terracotta" />
+                          <span>Quick View</span>
+                        </button>
+                      </div>
+
+                      {/* Card Details */}
+                      <div className="pt-3 flex-1 flex flex-col justify-between space-y-2">
+                        <div>
+                          <div className="text-[10px] uppercase font-semibold text-terracotta tracking-wider">
+                            {prod.brand}
+                          </div>
+                          <h3
+                            onClick={() => setSelectedProductModal(prod)}
+                            className="font-medium text-xs sm:text-sm text-ink line-clamp-2 leading-tight cursor-pointer hover:text-terracotta transition-colors pt-0.5"
+                          >
+                            {friendlyTitle}
+                          </h3>
+                        </div>
+
+                        <div className="pt-1.5 border-t border-sand/60 flex items-baseline justify-between">
+                          <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <span className="text-xs font-semibold text-ink-soft font-sans">Rs.</span>
+                            <span className="font-sans text-base font-bold text-ink tabular-nums tracking-tight">
+                              {prod.price.toLocaleString()}
+                            </span>
+                            <span className="text-[11px] text-ink-soft/60 line-through tabular-nums font-sans">
+                              Rs. {Math.round(prod.price * 1.2).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center text-saffron text-xs">
+                            <Star className="w-3 h-3 fill-current" />
+                            <span className="ml-1 text-[11px] font-semibold text-ink font-sans">
+                              {prod.rating ? prod.rating.toFixed(1) : "4.8"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Quick Add CTA */}
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.96 }}
+                          onClick={() => handleAddToCart(prod)}
+                          className="w-full py-2 rounded-pill bg-bone border border-sand hover:bg-terracotta hover:border-terracotta hover:text-paper text-ink text-xs font-medium transition-colors duration-200"
+                        >
+                          Add to Bag
+                        </motion.button>
+                      </div>
+                    </div>
+                  </TiltCard>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Editorial Feature Band (The Eid Story, Deep Forest Green Background with Parallax Image) */}
+      <section className="py-16 sm:py-24 bg-forest text-bone relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            {/* Story Text (7 cols) */}
+            <motion.div
+              initial={false}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7 }}
+              className="lg:col-span-7 space-y-6"
+            >
+              <span className="text-xs uppercase tracking-widest text-saffron font-semibold font-mono">
+                Atelier Narrative · Season '26
+              </span>
+              <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-medium leading-[1.1] text-bone">
+                Tradition reimagined for the contemporary Pakistani home.
+              </h2>
+              <p className="text-sand/80 text-sm sm:text-base leading-relaxed max-w-xl">
+                From the heritage loom artisans of Faisalabad to the modern fashion houses of Lahore and Karachi, ShopKaro brings you verified authentic pieces crafted with timeless reverence and enduring quality.
+              </p>
+
+              <div className="flex flex-wrap gap-4 pt-2">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    setSelectedCategory("Fashion");
+                    const el = document.getElementById("trending-grid");
+                    el?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="px-7 py-3 rounded-pill bg-terracotta hover:bg-terracotta-deep text-paper font-medium text-xs transition-colors shadow-sm"
+                >
+                  Explore The Festive Collection →
+                </motion.button>
+              </div>
+            </motion.div>
+
+            {/* Editorial Lifestyle Photo with Parallax Drift (5 cols) */}
+            <motion.div
+              style={{ y: eidStoryImgY }}
+              className="lg:col-span-5 relative"
+            >
+              <div className="relative aspect-editorial w-full max-w-sm mx-auto rounded-2xl overflow-hidden border border-forest-light shadow-2xl rotate-1 group">
+                <img
+                  src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80"
+                  alt="Pakistani Men Kurta Craftsmanship"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-forest-deep/80 backdrop-blur-md text-[10px] font-mono text-sand border border-forest-light">
+                  Hand-stitched in Faisalabad
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Trending Now (12-Column Editorial Product Grid with Featured 2-Col Cards) */}
+      <section id="trending-grid" className="py-16 sm:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          {/* Section Header & Filters */}
+          <motion.div
+            initial={false}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-sand"
+          >
+            <div>
+              <div className="text-xs uppercase font-semibold text-terracotta tracking-wider">
+                Explore The Catalog
+              </div>
+              <h2 className="font-display text-3xl sm:text-4xl font-medium text-ink mt-1">
+                Trending across Pakistan
+              </h2>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => handleSelectCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    selectedCategory === cat
+                      ? "bg-terracotta text-paper shadow-sm"
+                      : "bg-paper border border-sand text-ink-soft hover:text-ink hover:border-sand/80"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* The 12-Column Editorial Grid with Staggered Framer Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            {trendingProducts.map((prod, idx) => {
+              const friendlyTitle = cleanTitle(prod.title);
+              const img = getProductImage(prod);
+              const isFeatured = idx === 3 || idx === 11; // Breaks grid rhythm
+              const isFav = wishlist.includes(prod.product_id);
+
+              if (isFeatured) {
+                return (
+                  <motion.div
+                    key={prod.product_id || idx}
+                    initial={false}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: (idx % 4) * 0.08 }}
+                    className="col-span-2"
+                  >
+                    <TiltCard maxTilt={4} className="h-full">
+                      <div className="h-full relative rounded-card bg-paper border border-sand p-5 shadow-warm flex flex-col md:flex-row gap-5 items-center justify-between">
+                        <div className="relative aspect-square w-full md:w-1/2 overflow-hidden rounded-xl bg-bone border border-sand/70">
+                          <img
+                            src={img}
+                            alt={friendlyTitle}
+                            className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
+                          />
+                          {/* Tactile Curator's Spotlight Rosette Seal Sticker */}
+                          <CuratorSpotlightSticker />
+                        </div>
+
+                        <div className="w-full md:w-1/2 flex flex-col justify-between space-y-3">
+                          <div>
+                            <span className="text-xs font-semibold text-terracotta uppercase tracking-wider">
+                              {prod.brand} · Featured Item
+                            </span>
+                            <h3 className="font-display text-xl sm:text-2xl font-medium text-ink mt-1 leading-snug">
+                              {friendlyTitle}
+                            </h3>
+                            <p className="text-xs text-ink-soft mt-1 leading-relaxed line-clamp-2">
+                              Hand-selected by our Lahore editorial studio for exemplary finishing, authentic materials, and high nationwide satisfaction.
+                            </p>
+                          </div>
+
+                          <div className="pt-2 border-t border-sand/70 flex items-baseline justify-between">
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                              <span className="text-sm font-semibold text-ink-soft font-sans">Rs.</span>
+                              <span className="font-sans text-2xl font-bold text-ink tabular-nums tracking-tight">
+                                {prod.price.toLocaleString()}
+                              </span>
+                              <span className="text-xs text-ink-soft/60 line-through tabular-nums font-sans">
+                                Rs. {Math.round(prod.price * 1.25).toLocaleString()}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full bg-saffron/20 border border-saffron/40 text-[10px] font-bold text-ink font-mono">
+                                20% OFF
+                              </span>
+                            </div>
+                            <div className="flex items-center text-saffron text-xs">
+                              <Star className="w-3.5 h-3.5 fill-current" />
+                              <span className="ml-1 font-semibold text-ink font-sans">4.9 (420+ reviews)</span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 pt-1">
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() => handleAddToCart(prod)}
+                              className="flex-1 py-2.5 rounded-pill bg-terracotta hover:bg-terracotta-deep text-paper text-xs font-medium transition-colors"
+                            >
+                              Add to Bag
+                            </motion.button>
+                            <button
+                              onClick={() => setSelectedProductModal(prod)}
+                              className="px-4 py-2.5 rounded-pill border border-sand bg-bone hover:bg-sand/40 text-ink text-xs font-medium transition-colors"
+                            >
+                              Quick View
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </TiltCard>
+                  </motion.div>
+                );
+              }
+
+              return (
+                <motion.div
+                  key={prod.product_id || idx}
+                  initial={false}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: (idx % 4) * 0.08 }}
+                >
+                  <TiltCard maxTilt={6} className="h-full">
+                    <div className="group relative flex flex-col justify-between h-full rounded-card bg-paper border border-sand p-3.5 shadow-warm-sm hover:shadow-warm transition-shadow">
+                      {/* 4:5 image ratio */}
+                      <div className="relative aspect-editorial w-full overflow-hidden rounded-xl bg-bone/40 border border-sand/60">
+                        <img
+                          src={img}
+                          alt={friendlyTitle}
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                        />
+
+                        {/* Tactile Multi-Shape Card Sticker */}
+                        <ProductCardSticker category={prod.category} title={prod.title} index={idx} />
+
+                        <motion.button
+                          whileTap={{ scale: 0.8 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleWishlist(prod.product_id);
+                          }}
+                          className="absolute top-2.5 right-2.5 p-2 rounded-full bg-paper/90 border border-sand text-ink-soft hover:text-terracotta shadow-sm transition-colors"
+                          title="Add to Wishlist"
+                        >
+                          <Heart
+                            className={`w-3.5 h-3.5 transition-colors ${
+                              isFav ? "fill-terracotta text-terracotta" : ""
+                            }`}
+                          />
+                        </motion.button>
+
+                        <button
+                          onClick={() => setSelectedProductModal(prod)}
+                          className="absolute inset-x-3 bottom-3 py-2 rounded-pill bg-paper/95 backdrop-blur-md border border-sand text-xs font-medium text-ink hover:bg-paper transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-terracotta" />
+                          <span>Quick View</span>
+                        </button>
+                      </div>
+
+                      <div className="pt-3 flex-1 flex flex-col justify-between space-y-2">
+                        <div>
+                          <div className="text-[10px] uppercase font-semibold text-terracotta tracking-wider">
+                            {prod.brand}
+                          </div>
+                          <h3
+                            onClick={() => setSelectedProductModal(prod)}
+                            className="font-medium text-xs sm:text-sm text-ink line-clamp-2 leading-tight cursor-pointer hover:text-terracotta transition-colors pt-0.5"
+                          >
+                            {friendlyTitle}
+                          </h3>
+                        </div>
+
+                        <div className="pt-1.5 border-t border-sand/60 flex items-baseline justify-between">
+                          <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <span className="text-xs font-semibold text-ink-soft font-sans">Rs.</span>
+                            <span className="font-sans text-base font-bold text-ink tabular-nums tracking-tight">
+                              {prod.price.toLocaleString()}
+                            </span>
+                            <span className="text-[11px] text-ink-soft/60 line-through tabular-nums font-sans">
+                              Rs. {Math.round(prod.price * 1.2).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center text-saffron text-xs">
+                            <Star className="w-3 h-3 fill-current" />
+                            <span className="ml-1 text-[11px] font-semibold text-ink font-sans">
+                              {prod.rating ? prod.rating.toFixed(1) : "4.8"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.96 }}
+                          onClick={() => handleAddToCart(prod)}
+                          className="w-full py-2 rounded-pill bg-bone border border-sand hover:bg-terracotta hover:border-terracotta hover:text-paper text-ink text-xs font-medium transition-colors duration-200"
+                        >
+                          Add to Bag
+                        </motion.button>
+                      </div>
+                    </div>
+                  </TiltCard>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 8. Brand Marquee / Showcase with Smooth Infinite Glide */}
+      <section className="py-12 bg-sand/30 border-y border-sand/60 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-6">
+            <span className="text-xs uppercase font-semibold text-ink-soft tracking-widest">
+              Direct Partnerships with Pakistan's Finest Ateliers
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 opacity-75 grayscale hover:grayscale-0 transition-all duration-500 font-display text-lg sm:text-xl font-medium tracking-wide">
+            {["Khaadi", "Bareeze", "Gul Ahmed", "Sapphire", "J. Junaid Jamshed", "Anker", "Samsung", "Nishat Linen"].map((brand, i) => (
+              <motion.span
+                key={i}
+                whileHover={{ scale: 1.1, color: "#C4532D" }}
+                transition={{ duration: 0.2 }}
+                className="cursor-default"
+              >
+                {brand}
+              </motion.span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 9. Social Proof (Reviews across Pakistan with Framer InView) */}
+      <section className="py-16 sm:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-xl mx-auto space-y-2"
+          >
+            <div className="text-xs uppercase font-semibold text-terracotta tracking-wider">
+              Trusted by 42,000+ Pakistani Homes
+            </div>
+            <h2 className="font-display text-3xl sm:text-4xl font-medium text-ink">
+              Verified Shopper Stories
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                quote:
+                  "The Bareeze lawn fabric was 100% original and arrived in Gulberg Lahore in 48 hours. The AI recommendation picked the exact color palette I was looking for.",
+                author: "Ayesha K.",
+                city: "Lahore",
+                verified: "Verified Buyer",
+              },
+              {
+                quote:
+                  "Finding genuine Anker sound products with Cash on Delivery without duplicate knockoffs is rare in Pakistan. ShopKaro is our family's first choice now.",
+                author: "Hamza M.",
+                city: "Karachi",
+                verified: "Verified Tech Enthusiast",
+              },
+              {
+                quote:
+                  "I searched in Roman Urdu 'eid ke liye kurta' and the platform immediately recognized the festive context and showed top Junaid Jamshed stock. Brilliant!",
+                author: "Bilal S.",
+                city: "Islamabad",
+                verified: "Verified Buyer",
+              },
+            ].map((review, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 25 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.12 }}
+                className="p-6 rounded-card bg-paper border border-sand space-y-4 shadow-warm-sm hover:shadow-warm transition-shadow"
+              >
+                <div className="flex text-saffron">
+                  {[...Array(5)].map((_, idx) => (
+                    <Star key={idx} className="w-4 h-4 fill-current" />
+                  ))}
+                </div>
+                <p className="text-xs sm:text-sm text-ink-soft leading-relaxed italic">
+                  "{review.quote}"
+                </p>
+                <div className="pt-2 border-t border-sand/60 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-semibold text-ink">{review.author}</span>
+                    <span className="text-ink-soft"> · {review.city}</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-sage-deep font-semibold">
+                    {review.verified}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 10. Editorial Footer (Forest Green Background with Cropped Watermark) */}
+      <footer className="bg-forest text-bone pt-16 pb-12 border-t border-forest-light relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="col-span-2 md:col-span-1 space-y-3">
+              <a href="#" className="font-display text-2xl font-semibold tracking-tight text-bone">
+                ShopKaro<span className="text-terracotta">.</span>
+              </a>
+              <p className="text-xs text-sand/70 leading-relaxed">
+                Pakistan's premium commerce destination. Powered by deep neural ranking, human-curated style, and local delivery networks.
+              </p>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <h4 className="font-semibold text-bone uppercase tracking-wider text-[11px]">
+                Atelier Collections
+              </h4>
+              <ul className="space-y-1.5 text-sand/70">
+                <li><a href="#" className="hover:text-bone transition-colors">Women's Embroidered Lawn</a></li>
+                <li><a href="#" className="hover:text-bone transition-colors">Men's Handcrafted Kurtas</a></li>
+                <li><a href="#" className="hover:text-bone transition-colors">High-Fidelity Sound & Earbuds</a></li>
+                <li><a href="#" className="hover:text-bone transition-colors">Pure Basmati Reserve</a></li>
+              </ul>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <h4 className="font-semibold text-bone uppercase tracking-wider text-[11px]">
+                Customer Care
+              </h4>
+              <ul className="space-y-1.5 text-sand/70">
+                <li><span>Nationwide Hotline: 042-111-SHOP</span></li>
+                <li><span>WhatsApp Support: 0300-SHOPKARO</span></li>
+                <li><span>7-Day Hassle-Free Returns</span></li>
+                <li><span>Track Order with Rider SMS</span></li>
+              </ul>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <h4 className="font-semibold text-bone uppercase tracking-wider text-[11px]">
+                Payment Methods
+              </h4>
+              <div className="flex flex-wrap gap-2 text-[11px] font-mono text-sand/80">
+                <span className="px-2 py-1 rounded bg-forest-deep border border-forest-light">Cash on Delivery</span>
+                <span className="px-2 py-1 rounded bg-forest-deep border border-forest-light">JazzCash</span>
+                <span className="px-2 py-1 rounded bg-forest-deep border border-forest-light">Easypaisa</span>
+                <span className="px-2 py-1 rounded bg-forest-deep border border-forest-light">Visa / Mastercard</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-8 border-t border-forest-light flex flex-col sm:flex-row items-center justify-between text-xs text-sand/60 gap-4">
+            <div>© 2026 ShopKaro Private Limited. All rights reserved. Lahore · Karachi · Islamabad.</div>
+            <div className="flex items-center gap-4">
+              <span>Week 11 Capstone AI Commerce Platform</span>
+              <button
+                onClick={() => setIsStudioOpen(true)}
+                className="text-terracotta hover:underline font-mono text-[11px]"
+              >
+                Developer Insights Drawer →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Cropped Watermark Detail at the bottom */}
+        <div className="absolute -bottom-8 left-0 right-0 text-center font-display text-[12vw] font-bold text-forest-deep/60 select-none pointer-events-none tracking-tight">
+          SHOPKARO
+        </div>
+      </footer>
+
+      {/* 11. Hidden Studio / AI Insights Floating Pill (Bottom-Left) */}
+      <div className="fixed bottom-5 left-5 z-40">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsStudioOpen(true)}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-pill bg-forest-deep/95 backdrop-blur-md border border-forest-light hover:border-terracotta text-bone text-xs font-medium shadow-[0_8px_25px_rgb(0,0,0,0.25)] transition-colors group"
+          title="Open Studio & Engineering Insights (⌘K)"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-terracotta ring-2 ring-terracotta/30" />
+          <span className="tracking-wide">Studio Lens</span>
+          <kbd className="hidden sm:inline-block text-[10px] font-mono text-sand/70 bg-forest px-1.5 py-0.5 rounded border border-forest-light">
+            ⌘K
+          </kbd>
+        </motion.button>
+      </div>
+
+      {/* 12. Floating Toast Notification with AnimatePresence */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-2xl bg-forest-deep text-bone border border-forest-light shadow-warm-lg flex items-center gap-2 text-xs"
+          >
+            <CheckCircle2 className="w-4 h-4 text-sage" />
+            <span>{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Drawers & Modals */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
+        onUpdateQty={handleUpdateQty}
+        onRemoveItem={handleRemoveFromCart}
+        onClearCart={() => setCartItems([])}
+      />
+
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSelectProduct={(id) => setPeekSkuId(id)}
+        onExecuteSearch={(q) => {
+          setSearchQuery(q);
+          const el = document.getElementById("trending-grid");
+          el?.scrollIntoView({ behavior: "smooth" });
+        }}
+      />
+
+      <ProductDetailModal
+        product={selectedProductModal}
+        onClose={() => setSelectedProductModal(null)}
+        onAddToCart={(p, q) => handleAddToCart(p, q)}
+        isWishlisted={selectedProductModal ? wishlist.includes(selectedProductModal.product_id) : false}
+        onToggleWishlist={handleToggleWishlist}
+      />
+
+      <ProductPeekDrawer
+        productId={peekSkuId}
+        onClose={() => setPeekSkuId(null)}
+        onAddToCart={handleAddToCart}
+      />
+
+      <StudioDrawer
+        isOpen={isStudioOpen}
+        onClose={() => setIsStudioOpen(false)}
+        activePersona={activePersona}
+        onSelectPersona={handleSelectPersona}
+        activeModel={activeModel}
+        onSelectModel={(m) => {
+          setActiveModel(m);
+          showToast(`Active Algorithm switched to ${m}`);
+        }}
+        onOpenPeekSku={(id) => setPeekSkuId(id)}
+      />
+
+      <ShortcutSheet
+        isOpen={isShortcutOpen}
+        onClose={() => setIsShortcutOpen(false)}
+      />
+
+      <CommandPalette
+        isOpen={isCommandOpen}
+        onClose={() => setIsCommandOpen(false)}
+        onOpenStudio={() => setIsStudioOpen(true)}
+        onSelectProduct={(id) => setPeekSkuId(id)}
+        onSelectPersona={handleSelectPersona}
+        onOpenCart={() => setIsCartOpen(true)}
+      />
     </div>
   );
 }
-
-// Subcomponent: Product Card with In-Stock / Low-Stock / Out-of-Stock
-function ProductCard({
-  product,
-  onPeek,
-  onAddCart,
-}: {
-  product: Product;
-  onPeek: (pid: string) => void;
-  onAddCart: (p: Product) => void;
-}) {
-  const isLowStock = product.stock_quantity < 20 && product.stock_quantity > 0;
-  const isOutOfStock = product.stock_quantity <= 0;
-
-  return (
-    <div className="bg-[#141a26]/70 hover:bg-[#1c2434]/85 border border-white/10 hover:border-[#00f0ff]/40 rounded-xl p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_10px_25px_rgba(0,0,0,0.5),0_0_20px_rgba(0,240,255,0.15)]">
-      <div>
-        <div className="flex items-center justify-between text-[11px] mb-2">
-          <span className="bg-white/10 text-slate-300 px-2 py-0.5 rounded text-[10px] font-semibold">
-            {product.category}
-          </span>
-          <span
-            className={`font-mono text-[10px] ${
-              isOutOfStock ? "text-[#f43f5e]" : isLowStock ? "text-[#f59e0b] font-bold" : "text-[#10b981]"
-            }`}
-          >
-            {isOutOfStock ? "Out of Stock" : isLowStock ? `Low Stock (${product.stock_quantity})` : `In Stock (${product.stock_quantity})`}
-          </span>
-        </div>
-        <h4 className="text-xs font-semibold text-white line-clamp-2 h-9" title={product.title}>
-          {product.title}
-        </h4>
-        <div className="text-[11px] text-slate-400 mt-1">{product.brand} • {product.subcategory || ""}</div>
-      </div>
-
-      <div className="mt-4 pt-3 border-t border-white/5">
-        <div className="flex items-baseline justify-between mb-3">
-          <div className="num font-extrabold text-sm text-white">PKR {product.price.toLocaleString()}</div>
-          <div className="text-[11px] text-[#f59e0b]">★ {product.rating || 4.5}</div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => onPeek(product.product_id)}
-            className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold py-1.5 rounded-lg text-white transition-all"
-          >
-            <span>Peek</span>
-            <kbd className="kbd-badge text-[9px]">P</kbd>
-          </button>
-          <button
-            onClick={() => onAddCart(product)}
-            disabled={isOutOfStock}
-            className={`text-xs font-bold py-1.5 rounded-lg transition-all ${
-              isOutOfStock
-                ? "bg-white/5 text-slate-500 cursor-not-allowed"
-                : "bg-[#00f0ff] hover:bg-cyan-400 text-black shadow-[0_0_15px_rgba(0,240,255,0.2)]"
-            }`}
-          >
-            + Cart
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
