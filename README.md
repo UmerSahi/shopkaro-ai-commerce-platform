@@ -1,6 +1,7 @@
 # ShopKaro | AI Commerce Intelligence Platform
 ### Production-Grade Recommender Systems • Demand Forecasting • Hybrid Search • UrduLish Assistant • Review Intelligence • A/B Testing
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://shopkaro-ai-commerce-platform.vercel.app/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![Next.js 14](https://img.shields.io/badge/Next.js-14.2+-black.svg)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
@@ -8,6 +9,8 @@
 [![LightGBM](https://img.shields.io/badge/LightGBM-4.5+-FF5722.svg)](https://lightgbm.readthedocs.io/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-1.1+-FFF000.svg)](https://duckdb.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4+-38B2AC.svg)](https://tailwindcss.com/)
+
+> 🌐 **Live Web Deployment**: Explore the live platform in your browser at **[shopkaro-ai-commerce-platform.vercel.app](https://shopkaro-ai-commerce-platform.vercel.app/)**
 
 ---
 
@@ -50,6 +53,12 @@ This repository delivers an end-to-end, production-ready AI Commerce Intelligenc
 ---
 
 ## 🚀 Quickstart & Setup Guide
+
+### 🌐 Instant Access: Live Demo
+Explore the production build immediately without local setup:
+👉 **[https://shopkaro-ai-commerce-platform.vercel.app](https://shopkaro-ai-commerce-platform.vercel.app/)**
+
+---
 
 ### Option 1: Unified 1-Click Startup (Recommended)
 Run both the **FastAPI Backend** and the **Next.js Frontend** simultaneously in a single terminal:
