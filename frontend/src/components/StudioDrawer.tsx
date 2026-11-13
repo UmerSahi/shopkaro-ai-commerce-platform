@@ -96,8 +96,9 @@ export function StudioDrawer({
     setChatInput("");
     setIsChatThinking(true);
 
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
     try {
-      const res = await fetch("http://127.0.0.1:8000/assistant/chat", {
+      const res = await fetch(`${apiBase}/assistant/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userText, conversation_id: "studio-session" }),

@@ -72,7 +72,8 @@ export default function AssistantPage() {
     setIsThinking(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/assistant/chat", {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      const res = await fetch(`${apiBase}/assistant/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, conversation_id: "assistant-web" }),

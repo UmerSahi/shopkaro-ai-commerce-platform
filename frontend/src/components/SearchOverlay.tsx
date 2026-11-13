@@ -49,8 +49,9 @@ export function SearchOverlay({
 
     const timer = setTimeout(async () => {
       setIsLoading(true);
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
       try {
-        const res = await fetch("http://127.0.0.1:8000/search", {
+        const res = await fetch(`${apiBase}/search`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: query.trim(), n: 6 }),
