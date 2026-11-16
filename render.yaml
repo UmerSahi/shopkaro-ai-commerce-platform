@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: shopkaro-backend
+    name: shopkaro-platform
     runtime: docker
     plan: free
     region: oregon
@@ -10,5 +10,5 @@ services:
         value: 10000
       - key: PYTHONUNBUFFERED
         value: "1"
-      - key: REDIS_HOST
-        value: ""
+      - key: NODE_ENV
+        value: production

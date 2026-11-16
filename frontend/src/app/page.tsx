@@ -46,7 +46,7 @@ import {
   CuratorSpotlightSticker,
 } from "../components/EditorialStickers";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 // High-fidelity mapping between UI category filter pills and backend catalog categories & queries
 const CATEGORY_MAP: Record<string, { query: string; category?: string }> = {
