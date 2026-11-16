@@ -42,7 +42,10 @@ ROMAN_URDU_SYNONYMS = {
     "bachon": ["kids", "children", "baby", "school"],
     "bachay": ["kids", "children", "baby", "school"],
     "ammi": ["women", "mother", "shawl", "lawn suit", "gift"],
-    "bhai": ["men", "brother", "kurta", "smartwatch", "earbuds"],
+    "bhai": ["men", "brother", "earbuds", "smartwatch", "gadgets"],
+    "earpods": ["earbuds", "wireless earbuds", "headphones", "airpods"],
+    "earpod": ["earbuds", "wireless earbuds", "headphones", "airpods"],
+    "handsfree": ["earbuds", "earphones", "headphones"],
     "sasta": ["budget", "cheap", "affordable", "discount"],
     "acha": ["best", "premium", "top", "quality"],
     "hazaar": ["1000", "thousand"],
@@ -107,7 +110,12 @@ class ShopKaroHybridSearch:
         if hazaar_match:
             extracted["max_price"] = float(hazaar_match.group(1)) * 1000
             
-        tak_match = re.search(r"(?:under|below|tak|kam)\s*(\d{3,7})", q_lower) or re.search(r"(\d{3,7})\s*(?:tak|under)", q_lower)
+        tak_match = (
+            re.search(r"(?:under|below|tak|kam)\s*(\d{3,7})", q_lower) or
+            re.search(r"(\d{3,7})\s*(?:tak|under|below)", q_lower) or
+            re.search(r"(\d{3,7})\s*(?:ky|ke|ka)?\s*(?:budget|range|price)", q_lower) or
+            re.search(r"(?:budget|range)\s*(?:of|mein|men)?\s*(\d{3,7})", q_lower)
+        )
         if tak_match and extracted["max_price"] is None:
             extracted["max_price"] = float(tak_match.group(1))
             
@@ -123,10 +131,11 @@ class ShopKaroHybridSearch:
         cat_keywords = {
             "Fashion": ["lawn", "suit", "kurta", "shawl", "chappal", "khussa", "lehenga", "clothing", "dress", "kapra", "kapray"],
             "Electronics": [
-                "laptop", "phone", "mobile", "charger", "earbuds", "watch", "smartwatch",
+                "laptop", "phone", "mobile", "charger", "earbuds", "earbud", "earpods", "earpod",
+                "earphones", "handsfree", "airpods", "airpod", "watch", "smartwatch",
                 "gadget", "audio", "tech", "sound", "headphone", "headphones", "bluetooth",
                 "speaker", "speakers", "wireless", "electronics", "anker", "samsung", "apple",
-                "airpods", "soundcore"
+                "soundcore"
             ],
             "Home & Living": ["bedsheet", "rug", "carpet", "air fryer", "kettle", "handi", "mug", "living", "appliances", "appliance", "ac", "dawlance"],
             "Beauty & Personal Care": ["perfume", "attar", "serum", "sunscreen", "oil", "rose water", "fragrance"],
@@ -230,6 +239,10 @@ class ShopKaroHybridSearch:
                 
             # Price filter
             if parsed["max_price"] and p_row["price"] > parsed["max_price"]:
+                continue
+                
+            # Stock filter: strictly ensure in-stock items for shoppers
+            if p_row.get("stock_quantity", 0) <= 0:
                 continue
                 
             # Personalization boost (Task 2)
@@ -621,6 +634,7 @@ class ShopKaroAssistant:
             reply = f"Ji zaroor! Yeh {len(products)} behtareen options aap ke matlooba criteria ke mutabiq dastiyab hain:\n\n" + "\n".join(p_lines) + "\n\nKya aap in mein se kisi item ko cart mein add karna chahtay hain ya mazeed details darkaar hain?"
             return {
                 "tool_called": "search_products",
+                "recommended_sku": products[0]["product_id"],
                 "reply": reply,
                 "data": res
             }
