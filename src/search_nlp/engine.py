@@ -30,6 +30,11 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 
 # Roman Urdu to Standard Commerce Term Normalization Dictionary
 ROMAN_URDU_SYNONYMS = {
+    "kurta": ["kurta", "men kurta", "shalwar kameez", "kurtas", "clothing"],
+    "kurtas": ["kurta", "men kurta", "shalwar kameez", "kurtas", "clothing"],
+    "kurti": ["kurti", "kurta", "women kurta", "clothing"],
+    "mardana": ["men", "mens", "kurta", "shalwar kameez", "clothing"],
+    "mens": ["men", "mardana", "kurta", "male"],
     "joota": ["shoes", "footwear", "khussa", "chappal", "sneakers"],
     "juta": ["shoes", "footwear", "khussa", "chappal"],
     "jootay": ["shoes", "footwear", "khussa", "chappal"],
@@ -129,7 +134,7 @@ class ShopKaroHybridSearch:
             
         # Categories
         cat_keywords = {
-            "Fashion": ["lawn", "suit", "kurta", "shawl", "chappal", "khussa", "lehenga", "clothing", "dress", "kapra", "kapray"],
+            "Fashion": ["lawn", "suit", "kurta", "kurti", "kurtas", "shalwar", "kameez", "mardana", "waistcoat", "sherwani", "shawl", "chappal", "khussa", "lehenga", "clothing", "dress", "kapra", "kapray"],
             "Electronics": [
                 "laptop", "phone", "mobile", "charger", "earbuds", "earbud", "earpods", "earpod",
                 "earphones", "handsfree", "airpods", "airpod", "watch", "smartwatch",

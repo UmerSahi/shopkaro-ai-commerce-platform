@@ -68,18 +68,54 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
         const data = await res.json();
         const isGuardrail = data.tool_called?.includes("guardrail");
         let recSku: string | null = null;
-        if (data.recommended_sku) {
-          recSku = data.recommended_sku;
-        } else if (data.data?.products?.[0]?.product_id) {
-          recSku = data.data.products[0].product_id;
+        const lower = text.toLowerCase();
+
+        // Strict category-intent alignment for verified Pakistani catalog
+        if (
+          lower.includes("kurta") || lower.includes("kurti") || lower.includes("kurtas") ||
+          lower.includes("mardana") || lower.includes("mens") || lower.includes("men kurta") ||
+          lower.includes("shalwar") || lower.includes("kameez") || lower.includes("waistcoat") ||
+          lower.includes("sherwani") || (lower.includes("men") && (lower.includes("suit") || lower.includes("dress") || lower.includes("kapra") || lower.includes("kapray")))
+        ) {
+          recSku = "SKU-04820";
+        } else if (
+          lower.includes("chappal") || lower.includes("peshawari") || lower.includes("khussa") ||
+          lower.includes("shoe") || lower.includes("shoes") || lower.includes("footwear") || lower.includes("joota")
+        ) {
+          recSku = "SKU-04825";
+        } else if (
+          lower.includes("earpod") || lower.includes("earbud") || lower.includes("headphone") ||
+          lower.includes("airpod") || lower.includes("handsfree") || lower.includes("soundcore") ||
+          lower.includes("audio") || lower.includes("earphone") || lower.includes("buds")
+        ) {
+          recSku = "PROD-00370";
+        } else if (
+          lower.includes("s24") || lower.includes("phone") || lower.includes("mobile") ||
+          lower.includes("samsung") || lower.includes("iphone") || lower.includes("smartphone")
+        ) {
+          recSku = "SKU-00104";
+        } else if (
+          lower.includes("ac") || lower.includes("dawlance") || lower.includes("inverter") ||
+          lower.includes("air conditioner") || lower.includes("cooler") || lower.includes("fridge")
+        ) {
+          recSku = "SKU-18230";
+        } else if (
+          lower.includes("rice") || lower.includes("basmati") || lower.includes("chawal") ||
+          lower.includes("biryani") || lower.includes("grocery") || lower.includes("groceries")
+        ) {
+          recSku = "SKU-05820";
+        } else if (
+          lower.includes("lawn") || lower.includes("suit") || lower.includes("eid") ||
+          lower.includes("kapra") || lower.includes("kapray") || lower.includes("ammi") ||
+          lower.includes("women") || lower.includes("female") || lower.includes("dress")
+        ) {
+          recSku = "SKU-10492";
         } else if (!isGuardrail) {
-          const lower = text.toLowerCase();
-          if (lower.includes("earpod") || lower.includes("earbud") || lower.includes("headphone") || lower.includes("airpod") || lower.includes("handsfree")) recSku = "PROD-00370";
-          else if (lower.includes("lawn") || lower.includes("eid") || lower.includes("suit")) recSku = "SKU-10492";
-          else if (lower.includes("s24") || lower.includes("phone")) recSku = "SKU-00104";
-          else if (lower.includes("ac") || lower.includes("dawlance")) recSku = "SKU-18230";
-          else if (lower.includes("rice") || lower.includes("basmati")) recSku = "SKU-05820";
-          else recSku = "PROD-00370";
+          if (data.recommended_sku) {
+            recSku = data.recommended_sku;
+          } else if (data.data?.products?.[0]?.product_id) {
+            recSku = data.data.products[0].product_id;
+          }
         }
 
         setMessages((prev) => [
@@ -97,7 +133,7 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
         throw new Error("Backend offline");
       }
     } catch {
-      // Offline fallback with strict domain guardrails
+      // Offline fallback with strict domain guardrails and accurate category matching
       setTimeout(() => {
         const lower = text.toLowerCase().trim();
         let reply = "";
@@ -146,35 +182,78 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
           tool = { name: "get_order_status()", args: { order_id: "ORD-98421" }, result: "Dispatched · In Transit via TCS · Est: 2 Days" };
           recSku = null;
         }
-        // 6. Earpods / Earbuds / Audio
-        else if (lower.includes("earpod") || lower.includes("earbud") || lower.includes("headphone") || lower.includes("airpod") || lower.includes("handsfree") || lower.includes("soundcore") || lower.includes("audio")) {
+        // 6. Men's Fashion & Kurtas
+        else if (
+          lower.includes("kurta") || lower.includes("kurti") || lower.includes("kurtas") ||
+          lower.includes("mardana") || lower.includes("mens") || lower.includes("men kurta") ||
+          lower.includes("shalwar") || lower.includes("kameez") || lower.includes("waistcoat") ||
+          lower.includes("sherwani") || (lower.includes("men") && (lower.includes("suit") || lower.includes("dress") || lower.includes("kapra") || lower.includes("kapray")))
+        ) {
+          reply = "Yeh lijiye! Men's collection se Junaid Jamshed Pure Cotton Embroidered Kurta White (SKU-04820) behtareen choice hai. 100% breathable pure cotton fabric, nafees neckline embroidery, aur price sirf Rs. 4,990 hai.";
+          tool = { name: "search_products()", args: { query: text, category: "Fashion", subcategory: "Kurtas" }, result: "Found SKU-04820 · Junaid Jamshed Pure Cotton Kurta · Rs. 4,990 · 4.7★" };
+          recSku = "SKU-04820";
+        }
+        // 7. Traditional Footwear & Peshawari Chappal
+        else if (
+          lower.includes("chappal") || lower.includes("peshawari") || lower.includes("khussa") ||
+          lower.includes("shoe") || lower.includes("shoes") || lower.includes("footwear") || lower.includes("joota")
+        ) {
+          reply = "Traditional Pakistani footwear mein Handmade Pure Leather Peshawari Chappal Black (SKU-04825) best seller hai. Genuine cowhide leather, double tyre sole aur price sirf Rs. 3,200 hai.";
+          tool = { name: "search_products()", args: { query: text, category: "Fashion", subcategory: "Footwear" }, result: "Found SKU-04825 · Traditional Leather Peshawari Chappal · Rs. 3,200 · 4.8★" };
+          recSku = "SKU-04825";
+        }
+        // 8. Earpods / Earbuds / Audio
+        else if (
+          lower.includes("earpod") || lower.includes("earbud") || lower.includes("headphone") ||
+          lower.includes("airpod") || lower.includes("handsfree") || lower.includes("soundcore") ||
+          lower.includes("audio") || lower.includes("earphone") || lower.includes("buds")
+        ) {
           reply = "Aap ke bhai ke liye under 10,000 budget mein Infinix Wireless Earbuds (PROD-00370) sab se behtareen choice hai! Price sirf Rs. 5,990 hai, rating 4.8★ verified hai, Environmental Noise Cancellation (ENC) aur 30-hour battery life ke sath. Iske ilawa Xiaomi Wireless Earbuds (Rs. 5,890) bhi stock mein available hain.";
           tool = { name: "search_products()", args: { query: text, category: "Electronics", max_price: 10000 }, result: "Found PROD-00370 · Infinix Wireless Earbuds · Rs. 5,990 (4.8★)" };
           recSku = "PROD-00370";
         }
-        // 7. Appliances
-        else if (lower.includes("ac") || lower.includes("dawlance")) {
+        // 9. Appliances
+        else if (
+          lower.includes("ac") || lower.includes("dawlance") || lower.includes("inverter") ||
+          lower.includes("air conditioner") || lower.includes("cooler") || lower.includes("fridge")
+        ) {
           reply = "Dawlance 1.5 Ton Energy Saver Inverter AC stock mein available hai. Inverter technology se 60% bijli ki bachat hoti hai.";
           tool = { name: "search_products()", args: { query: "Dawlance Inverter AC", category: "Appliances" }, result: "Found SKU-18230 · PKR 145,000" };
           recSku = "SKU-18230";
         }
-        // 8. Groceries
-        else if (lower.includes("rice") || lower.includes("basmati")) {
-          reply = "Super Kernel Basmati Rice 5kg aap ke cart mein add kar diya gaya hai!";
+        // 10. Groceries
+        else if (
+          lower.includes("rice") || lower.includes("basmati") || lower.includes("chawal") ||
+          lower.includes("biryani") || lower.includes("grocery") || lower.includes("groceries")
+        ) {
+          reply = "Super Kernel Basmati Rice 5kg aap ke cart mein add kar diya gaya hai! Export quality extra long grains.";
           tool = { name: "add_to_cart()", args: { product_id: "SKU-05820", qty: 1 }, result: "Added to cart successfully" };
           recSku = "SKU-05820";
         }
-        // 9. Lawn Collection
-        else if (lower.includes("lawn") || lower.includes("suit") || lower.includes("eid")) {
-          reply = "Gul Ahmed Festive Embroidered 3-piece lawn suit behtareen choice hai. Pure cotton fabric, Rs. 6,490.";
-          tool = { name: "search_products()", args: { query: text }, result: "Found SKU-10492 · Rs. 6,490" };
+        // 11. Smartphones & Mobiles (Samsung S24 Ultra)
+        else if (
+          lower.includes("s24") || lower.includes("phone") || lower.includes("mobile") ||
+          lower.includes("samsung") || lower.includes("iphone") || lower.includes("smartphone")
+        ) {
+          reply = "Samsung Galaxy S24 Ultra 256GB Titanium Gray (SKU-00104) official PTA approved flagship phone hai. 200MP camera, Snapdragon 8 Gen 3 aur 12-month brand warranty.";
+          tool = { name: "search_products()", args: { query: text, category: "Electronics", subcategory: "Smartphones" }, result: "Found SKU-00104 · Samsung S24 Ultra · Rs. 399,999 · 4.9★" };
+          recSku = "SKU-00104";
+        }
+        // 12. Lawn Collection
+        else if (
+          lower.includes("lawn") || lower.includes("suit") || lower.includes("eid") ||
+          lower.includes("kapra") || lower.includes("kapray") || lower.includes("ammi") ||
+          lower.includes("women") || lower.includes("female") || lower.includes("dress")
+        ) {
+          reply = "Gul Ahmed Festive Embroidered 3-piece lawn suit (SKU-10492) behtareen choice hai. Pure cotton fabric, Rs. 6,490.";
+          tool = { name: "search_products()", args: { query: text, category: "Fashion", subcategory: "Lawn Suits" }, result: "Found SKU-10492 · Rs. 6,490" };
           recSku = "SKU-10492";
         }
-        // 10. Catalog Search Fallback
+        // 13. Catalog Search Fallback
         else {
-          reply = "Aap ke bataye gaye criteria ke mutabiq ShopKaro Two-Tower engine ne verified catalog check kar liya hai.";
+          reply = "Aap ke bataye gaye criteria ke mutabiq ShopKaro Two-Tower engine ne verified catalog check kar liya hai. Barah-e-karam specific product category batayein.";
           tool = { name: "search_products()", args: { query: text }, result: "Matched verified item in Pakistani catalog" };
-          recSku = "PROD-00370";
+          recSku = null;
         }
 
         setMessages((prev) => [
@@ -277,7 +356,11 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
                   <div className="flex items-center space-x-3 p-2 bg-black/40 rounded border border-white/5">
                     <img
                       src={
-                        m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370"
+                        m.recommendedSku === "SKU-04820"
+                          ? "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80"
+                          : m.recommendedSku === "SKU-04825"
+                          ? "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=400&q=80"
+                          : m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370"
                           ? "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?auto=format&fit=crop&w=400&q=80"
                           : m.recommendedSku === "SKU-10492"
                           ? "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=400&q=80"
@@ -287,7 +370,7 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
                           ? "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80"
                           : m.recommendedSku === "SKU-18230"
                           ? "https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=400&q=80"
-                          : "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?auto=format&fit=crop&w=400&q=80"
+                          : "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80"
                       }
                       alt={m.recommendedSku}
                       className="w-14 h-14 object-cover rounded border border-white/10 flex-shrink-0"
@@ -296,11 +379,11 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-cyan-400 font-semibold">{m.recommendedSku}</span>
                         <span className="text-amber-400 font-bold text-xs">
-                          {m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370" ? "Rs. 5,990" : m.recommendedSku === "SKU-10492" ? "Rs. 6,490" : m.recommendedSku === "SKU-00104" ? "Rs. 399,999" : m.recommendedSku === "SKU-05820" ? "Rs. 2,190" : "Rs. 145,000"}
+                          {m.recommendedSku === "SKU-04820" ? "Rs. 4,990" : m.recommendedSku === "SKU-04825" ? "Rs. 3,200" : m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370" ? "Rs. 5,990" : m.recommendedSku === "SKU-10492" ? "Rs. 6,490" : m.recommendedSku === "SKU-00104" ? "Rs. 399,999" : m.recommendedSku === "SKU-05820" ? "Rs. 2,190" : "Rs. 145,000"}
                         </span>
                       </div>
                       <div className="text-slate-200 text-xs truncate mt-0.5 font-medium">
-                        {m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370" ? "Infinix Wireless Earbuds Active Noise Cancelling" : m.recommendedSku === "SKU-10492" ? "Gul Ahmed Festive Embroidered 3-Piece Lawn Suit" : m.recommendedSku === "SKU-00104" ? "Samsung Galaxy S24 Ultra Titanium" : m.recommendedSku === "SKU-05820" ? "Super Kernel Basmati Rice 5kg" : "Dawlance Inverter AC"}
+                        {m.recommendedSku === "SKU-04820" ? "Junaid Jamshed Pure Cotton Embroidered Kurta White" : m.recommendedSku === "SKU-04825" ? "Traditional Handmade Leather Peshawari Chappal" : m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370" ? "Infinix Wireless Earbuds Active Noise Cancelling" : m.recommendedSku === "SKU-10492" ? "Gul Ahmed Festive Embroidered 3-Piece Lawn Suit" : m.recommendedSku === "SKU-00104" ? "Samsung Galaxy S24 Ultra Titanium" : m.recommendedSku === "SKU-05820" ? "Super Kernel Basmati Rice 5kg" : "Dawlance Inverter AC"}
                       </div>
                       <div className="flex items-center space-x-2 mt-2">
                         <button

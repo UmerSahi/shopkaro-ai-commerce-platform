@@ -311,6 +311,15 @@ def get_bought_together(product_id: str, top_k: int = 4):
         "frequently_bought_together": items
     }
 
+@app.get("/products/{product_id}")
+def get_product_by_id(product_id: str):
+    p_map = products_map if products_map else (products_df.set_index("product_id").to_dict("index") if products_df is not None else {})
+    if product_id in p_map:
+        item = dict(p_map[product_id])
+        item["product_id"] = product_id
+        return item
+    raise HTTPException(status_code=404, detail="Product not found")
+
 @app.get("/search")
 def search_products(
     q: Optional[str] = Query(None, description="Customer query in English or UrduLish"),
