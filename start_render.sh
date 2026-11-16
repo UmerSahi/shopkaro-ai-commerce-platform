@@ -5,9 +5,13 @@ echo "=========================================================="
 echo "Starting ShopKaro Unified Full-Stack Platform on Render"
 echo "=========================================================="
 
-# 1. Start FastAPI in background on 127.0.0.1:8000
-echo "[1/2] Starting FastAPI Backend on 127.0.0.1:8000..."
-python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 &
+# Limit Node.js heap memory to 96MB (crucial for Render Free 512MB RAM tier)
+export NODE_OPTIONS="--max-old-space-size=96"
+export PYTHONUNBUFFERED=1
+
+# 1. Start FastAPI in background on 127.0.0.1:8000 (strictly 1 worker to conserve RAM)
+echo "[1/2] Starting FastAPI Backend on 127.0.0.1:8000 (1 worker)..."
+python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --workers 1 &
 BACKEND_PID=$!
 
 # 2. Wait for FastAPI to warm up

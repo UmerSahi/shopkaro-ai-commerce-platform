@@ -36,6 +36,7 @@ import src.search_nlp.engine as search_module
 
 sys.modules['__main__'].ShopKaroRecommender = rec_module.ShopKaroRecommender
 sys.modules['__main__'].TwoTowerModel = rec_module.TwoTowerModel
+sys.modules['__main__'].TwoTowerNumPy = getattr(rec_module, 'TwoTowerNumPy', None)
 sys.modules['__main__'].DemandForecastingEngine = fore_module.DemandForecastingEngine
 sys.modules['__main__'].ShopKaroHybridSearch = search_module.ShopKaroHybridSearch
 sys.modules['__main__'].ShopKaroAssistant = search_module.ShopKaroAssistant
@@ -72,6 +73,7 @@ async def add_process_time_header(request: Request, call_next):
 
 # Global singletons
 products_df: Optional[pd.DataFrame] = None
+products_map: Dict[str, Any] = {}
 recommender_engine = None
 forecasting_engine = None
 search_engine = None
@@ -79,21 +81,37 @@ assistant_agent = None
 recent_session_clicks = {}
 
 def load_platform_artifacts():
-    global products_df, recommender_engine, forecasting_engine, search_engine, assistant_agent
-    print("Loading AI Platform artifacts...")
+    global products_df, products_map, recommender_engine, forecasting_engine, search_engine, assistant_agent
+    if products_df is not None:
+        return
+    print("Loading AI Platform artifacts (memory-optimized)...")
     products_path = os.path.join(DATA_DIR, "products.parquet")
     if os.path.exists(products_path):
         products_df = pd.read_parquet(products_path)
+        for col in ['category', 'subcategory', 'brand']:
+            if col in products_df.columns:
+                products_df[col] = products_df[col].astype('category')
+        for col in ['price', 'stock_quantity', 'review_count']:
+            if col in products_df.columns:
+                products_df[col] = products_df[col].astype('int32')
+        for col in ['rating', 'margin_rate']:
+            if col in products_df.columns:
+                products_df[col] = products_df[col].astype('float32')
+        products_map = products_df.set_index("product_id").to_dict("index")
         
     rec_pkl = os.path.join(MODELS_DIR, "recommender_engine.pkl")
     if os.path.exists(rec_pkl):
         with open(rec_pkl, "rb") as f:
             recommender_engine = pickle.load(f)
+        if products_df is not None:
+            recommender_engine.products_df = products_df
+            recommender_engine.products_map = products_map
     elif products_df is not None:
         try:
             from src.recommender.engine import ShopKaroRecommender
             recommender_engine = ShopKaroRecommender()
             recommender_engine.products_df = products_df
+            recommender_engine.products_map = products_map
             recommender_engine.global_popular = products_df.sort_values(by="rating", ascending=False)["product_id"].tolist()[:100]
             for cat, grp in products_df.groupby("category"):
                 recommender_engine.category_popular[cat] = grp.sort_values(by="rating", ascending=False)["product_id"].tolist()[:50]
@@ -119,6 +137,8 @@ def load_platform_artifacts():
     if os.path.exists(search_pkl):
         with open(search_pkl, "rb") as f:
             search_engine = pickle.load(f)
+        if products_df is not None:
+            search_engine.products_df = products_df
     elif products_df is not None:
         search_engine = ShopKaroHybridSearch(products_df)
         
@@ -128,12 +148,11 @@ def load_platform_artifacts():
         assistant_agent = ShopKaroAssistant(search_engine, recommender_engine)
         
     # Batch Pre-computation for Top Users (Day 5 Task 1 requirement)
-    if recommender_engine is not None:
+    if recommender_engine is not None and products_map:
         print("Pre-computing batch recommendations into Redis/in-memory cache for ultra-low latency (<100ms)...")
         for u in ["USR-00001", "USR-00002", "USR-00003", "NEW_USER"]:
             rec_pids, m_used = recommender_engine.recommend(user_id=u, top_k=10)
-            p_map = products_df.set_index("product_id").to_dict("index")
-            items = [p_map[pid] for pid in rec_pids if pid in p_map]
+            items = [products_map[pid] for pid in rec_pids if pid in products_map]
             CacheManager.set(f"rec:{u}:10:None", {
                 "user_id": u,
                 "model_used": m_used,
@@ -150,6 +169,8 @@ def load_platform_artifacts():
                 "latency_ms": 1.15,
                 "recommendations": items[:8]
             }, ttl_seconds=86400)
+    import gc
+    gc.collect()
     print("AI Platform artifacts loaded & batch cache warmed successfully!")
 
 @app.on_event("startup")
@@ -226,7 +247,7 @@ def get_recommendations(user_id: str, top_k: int = 10, occasion: Optional[str] =
         rec_pids = blended[:top_k]
         model_used += "+realtime_session_rerank"
         
-    p_map = products_df.set_index("product_id").to_dict("index")
+    p_map = products_map if products_map else products_df.set_index("product_id").to_dict("index")
     items = []
     for pid in rec_pids:
         if pid in p_map:
@@ -265,7 +286,7 @@ def get_similar_products(product_id: str, top_k: int = 6):
         raise HTTPException(status_code=503, detail="Recommender model not loaded.")
         
     sim_pids = recommender_engine.get_similar_items(product_id, top_k=top_k)
-    p_map = products_df.set_index("product_id").to_dict("index")
+    p_map = products_map if products_map else products_df.set_index("product_id").to_dict("index")
     items = [p_map[pid] for pid in sim_pids if pid in p_map]
     
     res = {
@@ -281,7 +302,7 @@ def get_bought_together(product_id: str, top_k: int = 4):
         raise HTTPException(status_code=503, detail="Recommender model not loaded.")
         
     rec_pids, explanation = recommender_engine.get_frequently_bought_together(product_id, top_k=top_k)
-    p_map = products_df.set_index("product_id").to_dict("index")
+    p_map = products_map if products_map else products_df.set_index("product_id").to_dict("index")
     items = [p_map[pid] for pid in rec_pids if pid in p_map]
     
     return {
@@ -306,10 +327,13 @@ def search_products(
         raise HTTPException(status_code=503, detail="Search engine not loaded.")
         
     user_prof = None
-    if user_id and recommender_engine and recommender_engine.user_features is not None:
-        u_match = recommender_engine.user_features[recommender_engine.user_features["user_id"] == user_id]
-        if len(u_match) > 0:
-            user_prof = u_match.iloc[0].to_dict()
+    if user_id and recommender_engine:
+        if getattr(recommender_engine, "user_prof_map", None) and user_id in recommender_engine.user_prof_map:
+            user_prof = recommender_engine.user_prof_map[user_id]
+        elif getattr(recommender_engine, "user_features", None) is not None:
+            u_match = recommender_engine.user_features[recommender_engine.user_features["user_id"] == user_id]
+            if len(u_match) > 0:
+                user_prof = u_match.iloc[0].to_dict()
             
     results, parsed = search_engine.search(search_q, top_k=top_k, user_profile=user_prof, category=category)
     return {

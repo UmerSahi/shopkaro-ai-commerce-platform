@@ -53,27 +53,26 @@ ROMAN_URDU_SYNONYMS = {
 
 class ShopKaroHybridSearch:
     def __init__(self, products_df):
-        self.products_df = products_df.copy()
+        self.products_df = products_df
         self.corpus_ids = self.products_df["product_id"].tolist()
         
-        # Build Search Corpus Text
-        self.corpus_texts = (
-            self.products_df["title"].fillna("") + " " +
-            self.products_df["category"].fillna("") + " " +
-            self.products_df["subcategory"].fillna("") + " " +
-            self.products_df["brand"].fillna("") + " " +
-            self.products_df["description"].fillna("")
+        # Lightweight corpus (title + category + brand)
+        texts = (
+            self.products_df["title"].fillna("").astype(str) + " " +
+            self.products_df["category"].fillna("").astype(str) + " " +
+            self.products_df["brand"].fillna("").astype(str)
         ).tolist()
         
-        # 1. BM25 Tokenization
-        print("Indexing BM25 corpus...")
-        self.tokenized_corpus = [self._tokenize(t) for t in self.corpus_texts]
-        self.bm25 = BM25Okapi(self.tokenized_corpus)
-        
-        # 2. Semantic Vector Space
-        print("Building semantic vector representations...")
-        self.vectorizer = TfidfVectorizer(max_features=12000, stop_words="english", ngram_range=(1, 2))
-        self.doc_vectors = self.vectorizer.fit_transform(self.corpus_texts)
+        # Compact semantic representation (float32)
+        print("Building lightweight search vector representations...")
+        self.vectorizer = TfidfVectorizer(max_features=1702, stop_words="english", ngram_range=(1, 2))
+        self.doc_vectors = self.vectorizer.fit_transform(texts).astype(np.float32)
+        self.bm25_matrix = self.doc_vectors
+        self.corpus_texts = None
+        self.tokenized_corpus = None
+        del texts
+        import gc
+        gc.collect()
         print("Search indexing complete!")
 
     def _tokenize(self, text):
@@ -184,9 +183,17 @@ class ShopKaroHybridSearch:
                         diverse.append(r.to_dict())
                 return diverse[:top_k], parsed
         
-        # 1. BM25 scoring
+        # 1. BM25 scoring (sparse matrix acceleration or fallback)
         bm25_tokens = self._tokenize(expanded_query_str)
-        bm25_scores = self.bm25.get_scores(bm25_tokens)
+        if getattr(self, "bm25_matrix", None) is not None:
+            vocab = self.vectorizer.vocabulary_
+            q_vec = np.zeros(len(vocab), dtype=np.float32)
+            for t in bm25_tokens:
+                if t in vocab:
+                    q_vec[vocab[t]] = 1.0
+            bm25_scores = self.bm25_matrix.dot(q_vec)
+        else:
+            bm25_scores = self.bm25.get_scores(bm25_tokens)
         
         # 2. Semantic Cosine scoring
         query_vec = self.vectorizer.transform([expanded_query_str])

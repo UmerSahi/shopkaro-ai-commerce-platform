@@ -30,6 +30,29 @@ MODELS_DIR = os.path.join(DATA_DIR, "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
 
 # -------------------------------------------------------------
+# Pure NumPy Two-Tower Model (Zero Torch Overhead for Fast & Light Serving)
+# -------------------------------------------------------------
+class TwoTowerNumPy:
+    def __init__(self, u_emb, u_w1, u_b1, u_w2, u_b2, i_emb, i_w1, i_b1, i_w2, i_b2):
+        self.u_emb = u_emb.astype(np.float32)
+        self.u_w1 = u_w1.astype(np.float32)
+        self.u_b1 = u_b1.astype(np.float32)
+        self.u_w2 = u_w2.astype(np.float32)
+        self.u_b2 = u_b2.astype(np.float32)
+        self.i_emb = i_emb.astype(np.float32)
+        self.i_w1 = i_w1.astype(np.float32)
+        self.i_b1 = i_b1.astype(np.float32)
+        self.i_w2 = i_w2.astype(np.float32)
+        self.i_b2 = i_b2.astype(np.float32)
+
+    def score(self, u_idx, cand_ids):
+        u_h = np.maximum(0, self.u_emb[u_idx] @ self.u_w1 + self.u_b1)
+        u_v = u_h @ self.u_w2 + self.u_b2
+        i_h = np.maximum(0, self.i_emb[cand_ids] @ self.i_w1 + self.i_b1)
+        i_v = i_h @ self.i_w2 + self.i_b2
+        return (u_v * i_v).sum(axis=1)
+
+# -------------------------------------------------------------
 # PyTorch Two-Tower Architecture (Task 3 Hybrid Model)
 # -------------------------------------------------------------
 class TwoTowerModel(nn.Module):
@@ -299,7 +322,13 @@ class ShopKaroRecommender:
                 ids, scores = self.als_model.recommend(u_idx, self.user_item_csr[u_idx], N=top_k * 2, filter_already_liked_items=False)
                 raw_recs = [self.idx2item[i] for i in ids]
                 model_used = "collaborative_als"
-            elif model_type == "hybrid" and self.two_tower_model is not None:
+            elif model_type == "hybrid" and getattr(self, "two_tower_numpy", None) is not None:
+                cand_ids = np.array([self.item2idx[p] for p in self.global_popular[:200] if p in self.item2idx])
+                scores = self.two_tower_numpy.score(u_idx, cand_ids)
+                ranked = cand_ids[np.argsort(scores)[::-1]]
+                raw_recs = [self.idx2item[i] for i in ranked[:top_k * 2]]
+                model_used = "hybrid_two_tower"
+            elif model_type == "hybrid" and getattr(self, "two_tower_model", None) is not None:
                 # Two-Tower score top candidate pool
                 self.two_tower_model.eval()
                 with torch.no_grad():
@@ -329,11 +358,17 @@ class ShopKaroRecommender:
         """
         # User past purchases
         purchased = set()
-        if user_id and self.train_events is not None:
-            user_past = self.train_events[(self.train_events["user_id"] == user_id) & (self.train_events["event_type"] == "purchase")]
-            purchased = set(user_past["product_id"].unique())
+        if user_id:
+            if getattr(self, "user_purchased", None) and user_id in self.user_purchased:
+                purchased = self.user_purchased[user_id]
+            elif self.train_events is not None:
+                user_past = self.train_events[(self.train_events["user_id"] == user_id) & (self.train_events["event_type"] == "purchase")]
+                purchased = set(user_past["product_id"].unique())
             
-        prods_map = self.products_df.set_index("product_id").to_dict("index")
+        prods_map = getattr(self, "products_map", None)
+        if prods_map is None:
+            prods_map = self.products_df.set_index("product_id").to_dict("index")
+            self.products_map = prods_map
         scored_candidates = []
         
         for rank, pid in enumerate(candidate_pids):

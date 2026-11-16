@@ -27,9 +27,10 @@ WORKDIR /app
 # Make startup script executable
 RUN chmod +x start_render.sh
 
-# Environment variables
+# Environment variables (strict memory limits for 512MB RAM tier)
 ENV PYTHONUNBUFFERED=1
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=96"
 ENV REDIS_HOST=""
 
 # Expose port (Render sets $PORT dynamically, defaults to 10000)

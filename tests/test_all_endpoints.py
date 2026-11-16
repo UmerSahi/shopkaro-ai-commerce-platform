@@ -26,6 +26,7 @@ from fastapi.testclient import TestClient
 import src.recommender.engine as rec_module
 sys.modules['__main__'].ShopKaroRecommender = rec_module.ShopKaroRecommender
 sys.modules['__main__'].TwoTowerModel = rec_module.TwoTowerModel
+sys.modules['__main__'].TwoTowerNumPy = getattr(rec_module, 'TwoTowerNumPy', None)
 
 from src.api.main import app
 
