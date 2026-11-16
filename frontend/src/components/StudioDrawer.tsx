@@ -105,29 +105,33 @@ export function StudioDrawer({
       });
       if (res.ok) {
         const data = await res.json();
+        const isGuardrail = data.tool_called?.includes("guardrail");
         setChatMessages((prev) => [
           ...prev,
           {
             sender: "assistant",
-            text: data.reply || data.response || "Ji, aap ka order check kar liya hai.",
-            sku: data.recommended_sku || (data.tool_calls?.[0]?.result?.includes("SKU-") ? "SKU-10492" : undefined),
+            text: data.reply || data.response || "Ji, aap ka criteria check kar liya hai.",
+            sku: isGuardrail ? undefined : (data.recommended_sku || undefined),
           },
         ]);
       } else {
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            sender: "assistant",
-            text: "Ji, ShopKaro catalog mein yeh product verified aur available hai.",
-          },
-        ]);
+        throw new Error("Offline");
       }
     } catch (err) {
+      const lower = userText.toLowerCase().trim();
+      let replyText = "Ji bilkul, aap ShopKaro catalog se directly select kar saktay hain.";
+      if (
+        /\b(python|javascript|java|c\+\+|cpp|html|css|php|sql|bash|powershell|typescript|rust|golang)\b/i.test(lower) ||
+        /\b(code|coding|script|function|algorithm|developer|programming)\b/i.test(lower) ||
+        /(code likh|code liko|code bna)/i.test(lower)
+      ) {
+        replyText = "Maaf kijiye! Main ShopKaro shopping assistant hoon. Code likhna ya programming mere scope mein nahi hai. Shopping ke mutaliq sawaal poochiye.";
+      }
       setChatMessages((prev) => [
         ...prev,
         {
           sender: "assistant",
-          text: "Ji bilkul, aap ShopKaro catalog se directly select kar saktay hain.",
+          text: replyText,
         },
       ]);
     } finally {

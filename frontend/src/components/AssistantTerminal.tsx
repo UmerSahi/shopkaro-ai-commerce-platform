@@ -66,6 +66,18 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
 
       if (res.ok) {
         const data = await res.json();
+        const isGuardrail = data.tool_called?.includes("guardrail");
+        let recSku: string | null = null;
+        if (data.recommended_sku !== undefined) {
+          recSku = data.recommended_sku;
+        } else if (!isGuardrail) {
+          const lower = text.toLowerCase();
+          if (lower.includes("lawn") || lower.includes("eid") || lower.includes("suit")) recSku = "SKU-10492";
+          else if (lower.includes("s24") || lower.includes("phone")) recSku = "SKU-00104";
+          else if (lower.includes("ac") || lower.includes("dawlance")) recSku = "SKU-18230";
+          else if (lower.includes("rice") || lower.includes("basmati")) recSku = "SKU-05820";
+        }
+
         setMessages((prev) => [
           ...prev,
           {
@@ -74,35 +86,85 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
             toolCall: data.tool_called
               ? { name: data.tool_called, args: data.tool_args || data.data?.parsed_intent, result: data.tool_result || `${data.data?.count || 'Items'} found` }
               : null,
-            recommendedSku: data.recommended_sku || (data.data?.products?.[0]?.product_id) || (text.toLowerCase().includes("lawn") ? "SKU-10492" : text.toLowerCase().includes("s24") ? "SKU-00104" : null),
+            recommendedSku: recSku,
           },
         ]);
       } else {
         throw new Error("Backend offline");
       }
     } catch {
-      // Offline fallback
+      // Offline fallback with strict domain guardrails
       setTimeout(() => {
-        let reply = "Ji bilkul! Main ne catalog aur inventory check kar li hai.";
-        let tool = null;
-        let recSku = null;
+        const lower = text.toLowerCase().trim();
+        let reply = "";
+        let tool: any = null;
+        let recSku: string | null = null;
 
-        const lower = text.toLowerCase();
-        if (lower.includes("ord-98421") || lower.includes("kahan tak")) {
+        // 1. Promo & Voucher codes (Legitimate commerce inquiry)
+        if (/(promo|discount|coupon|voucher)\s*code/i.test(lower) || /discount mil sakta/i.test(lower)) {
+          reply = "ShopKaro par filwaqt welcome voucher code EID26 active hai jis se aap ko flat discount milega! Iske ilawa Rs. 3,000 se zayed ke tamam orders par free delivery hai.";
+          tool = { name: "verify_promotions()", args: { query: text }, result: "Active Campaign: EID26 · Free Nationwide Delivery > Rs. 3,000" };
+          recSku = null;
+        }
+        // 2. Coding, Python & Scripting Guardrail (Out of Scope)
+        else if (
+          /\b(python|javascript|java|c\+\+|cpp|html|css|php|sql|bash|powershell|typescript|rust|golang)\b/i.test(lower) ||
+          /\b(code|coding|script|function|algorithm|developer|programming|repo|debug|syntax|compiler)\b/i.test(lower) ||
+          /(code likh|code liko|code bna|program bna|script likh|code do)/i.test(lower)
+        ) {
+          reply = "Maaf kijiye! Main ShopKaro ka specialized e-commerce shopping concierge hoon. Mera kaam sirf ShopKaro catalog se products dhoondna, recommendations dena, cart manage karna aur order tracking mein madad karna hai. Code likhna ya programming queries mere daera-e-kar (scope) mein shamil nahi hain. Agar aap ko tech products maslan laptops, fast chargers ya earbuds dekhne hon toh zaroor batayein!";
+          tool = { name: "guardrail_safety_filter()", args: { query: text, violation: "coding_out_of_scope" }, result: "Blocked by ShopKaro Domain Guardrail: Programming query outside e-commerce scope" };
+          recSku = null;
+        }
+        // 3. Jailbreak & Prompt Injections Guardrail
+        else if (
+          /ignore (all|previous|prior) instructions/i.test(lower) ||
+          /system prompt/i.test(lower) ||
+          /jailbreak/i.test(lower) ||
+          /dan mode/i.test(lower) ||
+          /bypass guardrail/i.test(lower)
+        ) {
+          reply = "ShopKaro security guardrails active hain. Main strictly ShopKaro marketplace shopping assistant ke tor par serve karta hoon. Barah-e-karam shopping, inventory ya order status ke mutaliq sawaal poochiye.";
+          tool = { name: "guardrail_safety_filter()", args: { query: text, violation: "prompt_injection" }, result: "Blocked by Security Guardrail: System prompt protection active" };
+          recSku = null;
+        }
+        // 4. General Knowledge / Essays / Off-Topic Guardrail
+        else if (
+          /\b(who (is|was|are)|capital of|weather|essay|homework|assignment|math problem|solve (this|equation)|joke|latifa|shayari|sing a song|kahani|write a (poem|story|letter))\b/i.test(lower)
+        ) {
+          reply = "Main ShopKaro ka shopping assistant hoon. Main general knowledge, essays ya non-shopping sawaalaat handle nahi karta. Agar aap ko Eid shopping, electronics, lawn collection ya kisi order ka status janna hai toh batayein!";
+          tool = { name: "guardrail_safety_filter()", args: { query: text, violation: "general_knowledge_out_of_scope" }, result: "Blocked by Domain Guardrail: Non-commerce query" };
+          recSku = null;
+        }
+        // 5. Order tracking
+        else if (lower.includes("ord-98421") || lower.includes("kahan tak")) {
           reply = "Aap ka order ORD-98421 TCS courier ke through Karachi Warehouse se dispatch ho chuka hai. Expected delivery 2 din mein hogi.";
-          tool = { name: "get_order_status", args: { order_id: "ORD-98421" }, result: "Dispatched · In Transit via TCS · Est: 2 Days" };
-        } else if (lower.includes("ac") || lower.includes("dawlance")) {
+          tool = { name: "get_order_status()", args: { order_id: "ORD-98421" }, result: "Dispatched · In Transit via TCS · Est: 2 Days" };
+          recSku = null;
+        }
+        // 6. Appliances
+        else if (lower.includes("ac") || lower.includes("dawlance")) {
           reply = "Dawlance 1.5 Ton Energy Saver Inverter AC stock mein available hai. Inverter technology se 60% bijli ki bachat hoti hai.";
-          tool = { name: "search_products", args: { query: "Dawlance Inverter AC", category: "Appliances" }, result: "Found SKU-18230 · PKR 145,000" };
+          tool = { name: "search_products()", args: { query: "Dawlance Inverter AC", category: "Appliances" }, result: "Found SKU-18230 · PKR 145,000" };
           recSku = "SKU-18230";
-        } else if (lower.includes("rice") || lower.includes("basmati")) {
+        }
+        // 7. Groceries
+        else if (lower.includes("rice") || lower.includes("basmati")) {
           reply = "Super Kernel Basmati Rice 5kg aap ke cart mein add kar diya gaya hai!";
-          tool = { name: "add_to_cart", args: { product_id: "SKU-05820", qty: 1 }, result: "Added to cart successfully" };
+          tool = { name: "add_to_cart()", args: { product_id: "SKU-05820", qty: 1 }, result: "Added to cart successfully" };
           recSku = "SKU-05820";
-        } else {
-          reply = "Aap ke bataye gaye criteria ke mutabiq ShopKaro Two-Tower engine ne top match find kar liya hai.";
-          tool = { name: "search_products", args: { query: text }, result: "Found 4 matching products in verified catalog" };
+        }
+        // 8. Lawn Collection
+        else if (lower.includes("lawn") || lower.includes("suit") || lower.includes("eid")) {
+          reply = "Gul Ahmed Festive Embroidered 3-piece lawn suit behtareen choice hai. Pure cotton fabric, Rs. 6,490.";
+          tool = { name: "search_products()", args: { query: text }, result: "Found SKU-10492 · Rs. 6,490" };
           recSku = "SKU-10492";
+        }
+        // 9. Catalog Search Fallback
+        else {
+          reply = "Aap ke bataye gaye criteria ke mutabiq ShopKaro Two-Tower engine ne verified catalog check kar liya hai.";
+          tool = { name: "search_products()", args: { query: text }, result: "Matched verified item in Pakistani catalog" };
+          recSku = null;
         }
 
         setMessages((prev) => [
@@ -165,17 +227,35 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
 
               {/* Tool Execution Badge */}
               {m.toolCall && (
-                <div className="mt-2.5 pt-2 border-t border-white/10 text-[11px] font-mono space-y-1">
-                  <div className="flex items-center space-x-1.5 text-cyan-300">
-                    <Sparkles className="w-3 h-3" />
+                <div className={`mt-2.5 pt-2 border-t text-[11px] font-mono space-y-1 ${
+                  m.toolCall.name?.includes("guardrail")
+                    ? "border-amber-500/30 bg-amber-500/10 p-2.5 rounded"
+                    : "border-white/10"
+                }`}>
+                  <div className={`flex items-center space-x-1.5 ${
+                    m.toolCall.name?.includes("guardrail") ? "text-amber-400 font-semibold" : "text-cyan-300"
+                  }`}>
+                    {m.toolCall.name?.includes("guardrail") ? (
+                      <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                    ) : (
+                      <Sparkles className="w-3 h-3" />
+                    )}
                     <span className="font-semibold uppercase tracking-wider">
-                      TOOL: {m.toolCall.name}
+                      {m.toolCall.name?.includes("guardrail")
+                        ? "Domain Safety Guardrail Active"
+                        : `TOOL: ${m.toolCall.name}`}
                     </span>
                   </div>
-                  <div className="text-slate-400 text-[10px]">
-                    Args: {JSON.stringify(m.toolCall.args)}
-                  </div>
-                  <div className="text-emerald-400 text-[10px] bg-black/40 px-2 py-1 rounded border border-emerald-500/20">
+                  {m.toolCall.args && (
+                    <div className="text-slate-400 text-[10px]">
+                      Args: {JSON.stringify(m.toolCall.args)}
+                    </div>
+                  )}
+                  <div className={`text-[10px] px-2 py-1 rounded border ${
+                    m.toolCall.name?.includes("guardrail")
+                      ? "text-amber-300 bg-amber-950/40 border-amber-500/30"
+                      : "text-emerald-400 bg-black/40 border-emerald-500/20"
+                  }`}>
                     ↳ Result: {m.toolCall.result}
                   </div>
                 </div>

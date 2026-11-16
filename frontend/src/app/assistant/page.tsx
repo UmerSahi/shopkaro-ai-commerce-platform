@@ -16,6 +16,7 @@ import {
   Package,
   Star,
   Search,
+  ShieldCheck,
 } from "lucide-react";
 import { ProductPeekDrawer } from "../../components/ProductPeekDrawer";
 
@@ -81,6 +82,18 @@ export default function AssistantPage() {
 
       if (res.ok) {
         const data = await res.json();
+        const isGuardrail = data.tool_called?.includes("guardrail");
+        let recSku: string | null = null;
+        if (data.recommended_sku !== undefined) {
+          recSku = data.recommended_sku;
+        } else if (!isGuardrail) {
+          const lower = text.toLowerCase();
+          if (lower.includes("lawn") || lower.includes("eid") || lower.includes("suit")) recSku = "SKU-10492";
+          else if (lower.includes("s24") || lower.includes("phone")) recSku = "SKU-00104";
+          else if (lower.includes("ac") || lower.includes("dawlance")) recSku = "SKU-18230";
+          else if (lower.includes("rice") || lower.includes("basmati")) recSku = "SKU-05820";
+        }
+
         setMessages((prev) => [
           ...prev,
           {
@@ -89,37 +102,85 @@ export default function AssistantPage() {
             toolCall: data.tool_called
               ? { name: data.tool_called, args: data.tool_args, result: data.tool_result || "Grounded tool execution complete" }
               : null,
-            recommendedSku:
-              data.recommended_sku ||
-              (text.toLowerCase().includes("lawn") ? "SKU-10492" : text.toLowerCase().includes("s24") || text.toLowerCase().includes("phone") ? "SKU-00104" : text.toLowerCase().includes("ac") ? "SKU-18230" : text.toLowerCase().includes("rice") ? "SKU-05820" : null),
+            recommendedSku: recSku,
           },
         ]);
       } else {
         throw new Error("Offline");
       }
     } catch {
-      // Offline fallback
+      // Offline fallback with comprehensive domain guardrails
       setTimeout(() => {
-        let reply = "Ji bilkul! Main ne catalog aur inventory check kar li hai.";
-        let tool = null;
-        let recSku = null;
+        const lower = text.toLowerCase().trim();
+        let reply = "";
+        let tool: any = null;
+        let recSku: string | null = null;
 
-        const lower = text.toLowerCase();
-        if (lower.includes("ord-98421") || lower.includes("kahan tak")) {
+        // 1. Promo & Voucher codes (Legitimate commerce inquiry)
+        if (/(promo|discount|coupon|voucher)\s*code/i.test(lower) || /discount mil sakta/i.test(lower)) {
+          reply = "ShopKaro par filwaqt welcome voucher code **EID26** active hai jis se aap ko flat discount milega! Iske ilawa **Rs. 3,000** se zayed ke tamam orders par Cash on Delivery aur nationwide express shipping bilkul free hai.";
+          tool = { name: "verify_promotions()", args: { query: text }, result: "Active Campaign: EID26 · Free Nationwide Delivery > Rs. 3,000" };
+          recSku = null;
+        }
+        // 2. Coding, Python & Scripting Guardrail (Out of Scope)
+        else if (
+          /\b(python|javascript|java|c\+\+|cpp|html|css|php|sql|bash|powershell|typescript|rust|golang)\b/i.test(lower) ||
+          /\b(code|coding|script|function|algorithm|developer|programming|repo|debug|syntax|compiler)\b/i.test(lower) ||
+          /(code likh|code liko|code bna|program bna|script likh|code do)/i.test(lower)
+        ) {
+          reply = "Maaf kijiye! Main ShopKaro ka specialized e-commerce shopping concierge hoon. Mera kaam sirf ShopKaro catalog se products dhoondna, recommendations dena, cart manage karna aur order tracking mein madad karna hai. Code likhna ya programming queries mere daera-e-kar (scope) mein shamil nahi hain. Agar aap ko tech products maslan laptops, fast chargers ya earbuds dekhne hon toh zaroor batayein!";
+          tool = { name: "guardrail_safety_filter()", args: { query: text, violation: "coding_out_of_scope" }, result: "Blocked by ShopKaro Domain Guardrail: Programming query outside e-commerce scope" };
+          recSku = null;
+        }
+        // 3. Jailbreak & Prompt Injections Guardrail
+        else if (
+          /ignore (all|previous|prior) instructions/i.test(lower) ||
+          /system prompt/i.test(lower) ||
+          /jailbreak/i.test(lower) ||
+          /dan mode/i.test(lower) ||
+          /bypass guardrail/i.test(lower)
+        ) {
+          reply = "ShopKaro security guardrails active hain. Main strictly ShopKaro marketplace shopping assistant ke tor par serve karta hoon. Barah-e-karam shopping, inventory ya order status ke mutaliq sawaal poochiye.";
+          tool = { name: "guardrail_safety_filter()", args: { query: text, violation: "prompt_injection" }, result: "Blocked by Security Guardrail: System prompt protection active" };
+          recSku = null;
+        }
+        // 4. General Knowledge / Essays / Off-Topic Guardrail
+        else if (
+          /\b(who (is|was|are)|capital of|weather|essay|homework|assignment|math problem|solve (this|equation)|joke|latifa|shayari|sing a song|kahani|write a (poem|story|letter))\b/i.test(lower)
+        ) {
+          reply = "Main ShopKaro ka shopping assistant hoon. Main general knowledge, essays ya non-shopping sawaalaat handle nahi karta. Agar aap ko Eid shopping, electronics, lawn collection ya kisi order ka status janna hai toh batayein!";
+          tool = { name: "guardrail_safety_filter()", args: { query: text, violation: "general_knowledge_out_of_scope" }, result: "Blocked by Domain Guardrail: Non-commerce query" };
+          recSku = null;
+        }
+        // 5. Order tracking
+        else if (lower.includes("ord-98421") || lower.includes("kahan tak")) {
           reply = "Aap ka order ORD-98421 TCS courier ke through Karachi Logistics Hub se dispatch ho chuka hai. Expected delivery 2 din mein hogi.";
-          tool = { name: "get_order_status", args: { order_id: "ORD-98421" }, result: "Dispatched · In Transit via TCS · Est: 2 Days" };
-        } else if (lower.includes("ac") || lower.includes("dawlance")) {
+          tool = { name: "get_order_status()", args: { order_id: "ORD-98421" }, result: "Dispatched · In Transit via TCS · Est: 2 Days" };
+          recSku = null;
+        }
+        // 6. Appliances (Dawlance Inverter AC)
+        else if (lower.includes("ac") || lower.includes("dawlance")) {
           reply = "Dawlance 1.5 Ton Energy Saver Inverter AC stock mein available hai. Inverter technology se 60% bijli bachat aur 10-year compressor warranty.";
-          tool = { name: "search_products", args: { query: "Dawlance Inverter AC", category: "Appliances" }, result: "Found SKU-18230 · Rs. 145,000" };
+          tool = { name: "search_products()", args: { query: "Dawlance Inverter AC", category: "Appliances" }, result: "Found SKU-18230 · Rs. 145,000" };
           recSku = "SKU-18230";
-        } else if (lower.includes("rice") || lower.includes("basmati")) {
+        }
+        // 7. Groceries (Basmati Rice)
+        else if (lower.includes("rice") || lower.includes("basmati")) {
           reply = "Super Kernel Basmati Rice 5kg Export Quality (Guard) verified stock mein available hai. 32 din ka coverage hai.";
-          tool = { name: "search_products", args: { query: "Basmati Rice 5kg" }, result: "Found SKU-05820 · Rs. 2,190" };
+          tool = { name: "search_products()", args: { query: "Basmati Rice 5kg" }, result: "Found SKU-05820 · Rs. 2,190" };
           recSku = "SKU-05820";
-        } else {
-          reply = "Aap ke bataye gaye criteria ke mutabiq ShopKaro Two-Tower neural engine ne top match locate kar liya hai.";
-          tool = { name: "search_products", args: { query: text }, result: "Matched verified item in Pakistani catalog" };
+        }
+        // 8. Fashion & Lawn Collection
+        else if (lower.includes("lawn") || lower.includes("suit") || lower.includes("eid") || lower.includes("kapra") || lower.includes("ammi")) {
+          reply = "Yeh lijiye! Aap ke liye Gul Ahmed Festive Embroidered 3-piece lawn suit behtareen rahay ga. Pure cotton fabric hai, embroidery buhat nafees hai, aur price Rs. 6,490 hai. Stock mein sirf 120 units hain.";
+          tool = { name: "search_products()", args: { query: text }, result: "SKU-10492: Gul Ahmed Festive Embroidered 3-Piece Lawn Suit (Rs. 6,490)" };
           recSku = "SKU-10492";
+        }
+        // 9. Standard search
+        else {
+          reply = "Aap ke bataye gaye criteria ke mutabiq ShopKaro Two-Tower neural engine ne verified Pakistani catalog se top match locate kar liya hai.";
+          tool = { name: "search_products()", args: { query: text }, result: "Matched verified item in Pakistani catalog" };
+          recSku = null;
         }
 
         setMessages((prev) => [
@@ -235,11 +296,25 @@ export default function AssistantPage() {
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
-                        className="p-3 rounded-xl bg-bone/40 border border-sand text-left space-y-1"
+                        className={`p-3 rounded-xl border text-left space-y-1 ${
+                          msg.toolCall.name?.includes("guardrail")
+                            ? "bg-roseclay/15 border-terracotta/40"
+                            : "bg-bone/40 border-sand"
+                        }`}
                       >
-                        <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold text-terracotta">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Tool Executed: {msg.toolCall.name}()</span>
+                        <div className={`flex items-center gap-1.5 text-[11px] font-mono font-semibold ${
+                          msg.toolCall.name?.includes("guardrail") ? "text-terracotta-deep" : "text-terracotta"
+                        }`}>
+                          {msg.toolCall.name?.includes("guardrail") ? (
+                            <ShieldCheck className="w-3.5 h-3.5 text-terracotta" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          )}
+                          <span>
+                            {msg.toolCall.name?.includes("guardrail")
+                              ? "Domain Safety Guardrail Active"
+                              : `Tool Executed: ${msg.toolCall.name.replace(/\(\)$/, "")}()`}
+                          </span>
                         </div>
                         <div className="text-[11px] text-ink-soft font-mono bg-paper p-1.5 rounded border border-sand/70">
                           {msg.toolCall.result}

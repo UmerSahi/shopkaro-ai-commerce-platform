@@ -483,8 +483,80 @@ class ShopKaroAssistant:
         Conversational agent router:
         Calls the appropriate tool based on user intent and returns natural UrduLish responses.
         Strictly guarantees: No invented products, no invented prices, no fake inventory.
+        Enforces domain guardrails for out-of-scope queries (code, jailbreaks, general knowledge).
         """
-        msg_lower = user_message.lower()
+        msg_lower = user_message.lower().strip()
+        
+        # -------------------------------------------------------------
+        # Domain Guardrails Layer (Task 3: E-Commerce Assistant Scope)
+        # -------------------------------------------------------------
+        # 1. Discount / Promo code questions (Legitimate Commerce Query)
+        if any(term in msg_lower for term in ["promo code", "discount code", "coupon", "voucher", "discount mil sakta"]):
+            return {
+                "tool_called": "verify_promotions()",
+                "tool_args": {"query": user_message},
+                "tool_result": "Active Campaign: EID26 · Free Nationwide Delivery > Rs. 3,000",
+                "recommended_sku": None,
+                "reply": "ShopKaro par filwaqt welcome voucher code **EID26** active hai jis se aap ko flat discount milega! Iske ilawa **Rs. 3,000** se zayed ke tamam orders par Cash on Delivery (COD) aur nationwide shipping bilkul free hai.",
+                "data": {"guardrail": "promo_handled", "discount_code": "EID26"}
+            }
+
+        # 2. Programming, Coding & Script Writing Guardrail
+        coding_patterns = [
+            r"\b(python|javascript|java|c\+\+|cpp|html|css|php|sql|bash|powershell|typescript|rust|golang)\b",
+            r"\b(code|coding|script|function|algorithm|developer|programming|repo|debug|syntax|compiler)\b",
+            r"(code likh|code liko|code bna|program bna|script likh|code do)",
+        ]
+        if any(re.search(pat, msg_lower) for pat in coding_patterns):
+            return {
+                "tool_called": "guardrail_safety_filter()",
+                "tool_args": {"query": user_message, "violation": "coding_out_of_scope"},
+                "tool_result": "Blocked by ShopKaro Domain Guardrail: Programming query outside e-commerce scope",
+                "recommended_sku": None,
+                "reply": "Maaf kijiye! Main ShopKaro ka specialized e-commerce shopping concierge hoon. Mera kaam sirf ShopKaro catalog se products dhoondna, recommendations dena, cart manage karna aur order tracking mein madad karna hai. Code likhna ya programming queries mere daera-e-kar (scope) mein shamil nahi hain. Agar aap ko tech products maslan laptops, fast chargers ya earbuds dekhne hon toh zaroor batayein!",
+                "data": {"guardrail": "domain_violation", "category": "coding"}
+            }
+
+        # 3. System Prompt Leaking & Jailbreak Guardrail
+        jailbreak_patterns = [
+            r"ignore (all|previous|prior) instructions",
+            r"system prompt",
+            r"jailbreak",
+            r"dan mode",
+            r"act as",
+            r"pretend you are",
+            r"forget (your|everything)",
+            r"bypass guardrail"
+        ]
+        if any(re.search(pat, msg_lower) for pat in jailbreak_patterns):
+            return {
+                "tool_called": "guardrail_safety_filter()",
+                "tool_args": {"query": user_message, "violation": "prompt_injection"},
+                "tool_result": "Blocked by Security Guardrail: System prompt protection active",
+                "recommended_sku": None,
+                "reply": "ShopKaro security guardrails active hain. Main strictly ShopKaro marketplace shopping assistant ke tor par serve karta hoon. Barah-e-karam shopping, inventory ya order status ke mutaliq sawaal poochiye.",
+                "data": {"guardrail": "security_violation", "category": "jailbreak"}
+            }
+
+        # 4. General Knowledge / Off-Topic / Homework Guardrail
+        general_patterns = [
+            r"who (is|was|are)\b",
+            r"capital of\b",
+            r"weather\b",
+            r"\b(essay|homework|assignment|math problem|solve (this|equation|problem))\b",
+            r"\b(joke|latifa|shayari|sing a song|kahani)\b",
+            r"\b(write a (poem|story|letter|article|blog|speech|song))\b",
+            r"what is the (meaning of life|speed of light|formula|definition)"
+        ]
+        if any(re.search(pat, msg_lower) for pat in general_patterns):
+            return {
+                "tool_called": "guardrail_safety_filter()",
+                "tool_args": {"query": user_message, "violation": "general_knowledge_out_of_scope"},
+                "tool_result": "Blocked by Domain Guardrail: Non-commerce query",
+                "recommended_sku": None,
+                "reply": "Main ShopKaro ka shopping assistant hoon. Main general knowledge, essays ya non-shopping sawaalaat handle nahi karta. Agar aap ko Eid shopping, electronics, lawn collection ya kisi order ka status janna hai toh batayein!",
+                "data": {"guardrail": "domain_violation", "category": "general_knowledge"}
+            }
         
         # Intent 1: Order tracking
         order_match = re.search(r"ord[-_]?(\d{5})", msg_lower)

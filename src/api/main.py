@@ -170,6 +170,7 @@ class SearchRequest(BaseModel):
 class ChatMessage(BaseModel):
     message: str
     session_id: Optional[str] = "sess_001"
+    conversation_id: Optional[str] = None
     user_id: Optional[str] = None
 
 class ClickEvent(BaseModel):
@@ -330,7 +331,8 @@ def search_products_post(req: SearchRequest):
 def chat_with_assistant(chat_msg: ChatMessage):
     if assistant_agent is None:
         raise HTTPException(status_code=503, detail="Assistant agent not loaded.")
-    reply_obj = assistant_agent.chat(chat_msg.message, session_id=chat_msg.session_id, user_id=chat_msg.user_id)
+    sess = chat_msg.session_id or chat_msg.conversation_id or "sess_001"
+    reply_obj = assistant_agent.chat(chat_msg.message, session_id=sess, user_id=chat_msg.user_id)
     if isinstance(reply_obj, dict):
         if "reply" in reply_obj and "response" not in reply_obj:
             reply_obj["response"] = reply_obj["reply"]
