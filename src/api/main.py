@@ -89,11 +89,31 @@ def load_platform_artifacts():
     if os.path.exists(rec_pkl):
         with open(rec_pkl, "rb") as f:
             recommender_engine = pickle.load(f)
+    elif products_df is not None:
+        try:
+            from src.recommender.engine import ShopKaroRecommender
+            recommender_engine = ShopKaroRecommender()
+            recommender_engine.products_df = products_df
+            recommender_engine.global_popular = products_df.sort_values(by="rating", ascending=False)["product_id"].tolist()[:100]
+            for cat, grp in products_df.groupby("category"):
+                recommender_engine.category_popular[cat] = grp.sort_values(by="rating", ascending=False)["product_id"].tolist()[:50]
+        except Exception as e:
+            print(f"Fallback recommender init error: {e}")
             
     fore_pkl = os.path.join(MODELS_DIR, "forecasting_engine.pkl")
     if os.path.exists(fore_pkl):
         with open(fore_pkl, "rb") as f:
             forecasting_engine = pickle.load(f)
+    else:
+        try:
+            from src.forecasting.engine import DemandForecastingEngine
+            forecasting_engine = DemandForecastingEngine()
+            decisions_path = os.path.join(DATA_DIR, "inventory_decisions.json")
+            if os.path.exists(decisions_path):
+                with open(decisions_path, "r", encoding="utf-8") as f:
+                    forecasting_engine.inventory_decisions = json.load(f)
+        except Exception as e:
+            print(f"Fallback forecasting init error: {e}")
             
     search_pkl = os.path.join(MODELS_DIR, "search_engine.pkl")
     if os.path.exists(search_pkl):

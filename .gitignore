@@ -37,4 +37,5 @@ Thumbs.db
 data/models/*.pkl
 data/*.duckdb
 data/*.parquet
+!data/products.parquet
 
