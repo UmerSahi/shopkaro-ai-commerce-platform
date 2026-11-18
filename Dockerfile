@@ -10,8 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python requirements (pre-install CPU-only PyTorch for fast, lightweight builds)
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+# Install Python requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -30,7 +29,9 @@ RUN chmod +x start_render.sh
 # Environment variables (strict memory limits for 512MB RAM tier)
 ENV PYTHONUNBUFFERED=1
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=96"
+ENV NODE_OPTIONS="--max-old-space-size=80"
+ENV MALLOC_ARENA_MAX=2
+ENV MALLOC_TRIM_THRESHOLD_=65536
 ENV REDIS_HOST=""
 
 # Expose port (Render sets $PORT dynamically, defaults to 10000)

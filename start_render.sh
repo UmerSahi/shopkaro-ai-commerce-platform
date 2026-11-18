@@ -5,9 +5,13 @@ echo "=========================================================="
 echo "Starting ShopKaro Unified Full-Stack Platform on Render"
 echo "=========================================================="
 
-# Limit Node.js heap memory to 96MB (crucial for Render Free 512MB RAM tier)
-export NODE_OPTIONS="--max-old-space-size=96"
+# Strict Linux glibc & Python memory clamping for Render 512MB RAM tier
+export MALLOC_ARENA_MAX=2
+export MALLOC_TRIM_THRESHOLD_=65536
 export PYTHONUNBUFFERED=1
+
+# Limit Node.js heap memory to 80MB (crucial for Render Free 512MB RAM tier)
+export NODE_OPTIONS="--max-old-space-size=80"
 
 # 1. Start FastAPI in background on 127.0.0.1:8000 (strictly 1 worker to conserve RAM)
 echo "[1/2] Starting FastAPI Backend on 127.0.0.1:8000 (1 worker)..."

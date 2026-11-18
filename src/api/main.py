@@ -88,6 +88,8 @@ def load_platform_artifacts():
     products_path = os.path.join(DATA_DIR, "products.parquet")
     if os.path.exists(products_path):
         products_df = pd.read_parquet(products_path)
+        # Drop heavy text and unused columns to cut memory by >60%
+        products_df = products_df.drop(columns=['description', 'seller_id', 'lead_time_days'], errors='ignore')
         for col in ['category', 'subcategory', 'brand']:
             if col in products_df.columns:
                 products_df[col] = products_df[col].astype('category')

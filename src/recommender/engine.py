@@ -19,8 +19,9 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 from collections import defaultdict, Counter
-import torch
-import torch.nn as nn
+# Production serving uses TwoTowerNumPy (pure NumPy) with zero PyTorch RAM footprint
+torch = None
+nn = None
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from implicit.als import AlternatingLeastSquares
@@ -55,7 +56,7 @@ class TwoTowerNumPy:
 # -------------------------------------------------------------
 # PyTorch Two-Tower Architecture (Task 3 Hybrid Model)
 # -------------------------------------------------------------
-class TwoTowerModel(nn.Module):
+class TwoTowerModel(nn.Module if nn is not None else object):
     def __init__(self, num_users, num_items, embedding_dim=64):
         super(TwoTowerModel, self).__init__()
         # User Tower
