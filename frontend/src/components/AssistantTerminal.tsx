@@ -72,6 +72,11 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
 
         // Strict category-intent alignment for verified Pakistani catalog
         if (
+          lower.includes("laptop") || lower.includes("laptops") || lower.includes("notebook") ||
+          lower.includes("thinkpad") || lower.includes("macbook") || lower.includes("coding laptop")
+        ) {
+          recSku = "PROD-00239";
+        } else if (
           lower.includes("kurta") || lower.includes("kurti") || lower.includes("kurtas") ||
           lower.includes("mardana") || lower.includes("mens") || lower.includes("men kurta") ||
           lower.includes("shalwar") || lower.includes("kameez") || lower.includes("waistcoat") ||
@@ -249,10 +254,19 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
           tool = { name: "search_products()", args: { query: text, category: "Fashion", subcategory: "Lawn Suits" }, result: "Found SKU-10492 · Rs. 6,490" };
           recSku = "SKU-10492";
         }
-        // 13. Catalog Search Fallback
+        // 13. Laptops for Coding
+        else if (
+          lower.includes("laptop") || lower.includes("laptops") || lower.includes("notebook") ||
+          lower.includes("thinkpad") || lower.includes("macbook") || lower.includes("coding laptop")
+        ) {
+          reply = "Yeh lijiye! ShopKaro catalog se Lenovo Laptops for Coding (PROD-00239) behtareen choice hai. Fast performance, crisp AMOLED display aur price sirf Rs. 38,690 hai. Stock mein verified 59 units dastiyab hain. Iske ilawa HP Laptops for Coding (Rs. 49,290) bhi available hain.";
+          tool = { name: "search_products()", args: { query: text, category: "Electronics", subcategory: "Laptops for Coding" }, result: "Found PROD-00239 · Lenovo Laptops for Coding · Rs. 38,690 · 4.8★" };
+          recSku = "PROD-00239";
+        }
+        // 14. Product Not In Database Fallback
         else {
-          reply = "Aap ke bataye gaye criteria ke mutabiq ShopKaro Two-Tower engine ne verified catalog check kar liya hai. Barah-e-karam specific product category batayein.";
-          tool = { name: "search_products()", args: { query: text }, result: "Matched verified item in Pakistani catalog" };
+          reply = "Maaf kijiye, yeh product mere database / catalog mein mojood nahi hai.\n\nLekin ShopKaro verified Pakistani catalog mein yeh categories aur top options dastiyab hain:\n\n1. **Laptops & Tech**: Laptops for Coding (Lenovo, HP), Samsung Galaxy S24 Ultra, Infinix Wireless ANC Earbuds\n2. **Men's Fashion**: Junaid Jamshed Pure Cotton Embroidered Kurta (Rs. 4,990), Handmade Leather Peshawari Chappal (Rs. 3,200)\n3. **Women's Fashion**: Gul Ahmed Festive Embroidered 3-Piece Lawn Suit (Rs. 6,490)\n4. **Home & Appliances**: Dawlance 1.5 Ton Energy Saver Inverter AC (Rs. 145,000)\n5. **Groceries & Pantry**: Super Kernel Basmati Rice 5kg Export Quality (Rs. 2,190)\n\nAap in mein se kya dekhna chahein gay?";
+          tool = { name: "search_products()", args: { query: text }, result: "Product not in database · Suggested available catalog options" };
           recSku = null;
         }
 
@@ -356,7 +370,9 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
                   <div className="flex items-center space-x-3 p-2 bg-black/40 rounded border border-white/5">
                     <img
                       src={
-                        m.recommendedSku === "SKU-04820"
+                        m.recommendedSku === "PROD-00239" || m.recommendedSku === "SKU-00239"
+                          ? "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=400&q=80"
+                          : m.recommendedSku === "SKU-04820"
                           ? "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80"
                           : m.recommendedSku === "SKU-04825"
                           ? "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=400&q=80"
@@ -379,11 +395,11 @@ export function AssistantTerminal({ onAddToCart, onInspectSku }: AssistantTermin
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-cyan-400 font-semibold">{m.recommendedSku}</span>
                         <span className="text-amber-400 font-bold text-xs">
-                          {m.recommendedSku === "SKU-04820" ? "Rs. 4,990" : m.recommendedSku === "SKU-04825" ? "Rs. 3,200" : m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370" ? "Rs. 5,990" : m.recommendedSku === "SKU-10492" ? "Rs. 6,490" : m.recommendedSku === "SKU-00104" ? "Rs. 399,999" : m.recommendedSku === "SKU-05820" ? "Rs. 2,190" : "Rs. 145,000"}
+                          {m.recommendedSku === "PROD-00239" || m.recommendedSku === "SKU-00239" ? "Rs. 38,690" : m.recommendedSku === "SKU-04820" ? "Rs. 4,990" : m.recommendedSku === "SKU-04825" ? "Rs. 3,200" : m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370" ? "Rs. 5,990" : m.recommendedSku === "SKU-10492" ? "Rs. 6,490" : m.recommendedSku === "SKU-00104" ? "Rs. 399,999" : m.recommendedSku === "SKU-05820" ? "Rs. 2,190" : "Rs. 145,000"}
                         </span>
                       </div>
                       <div className="text-slate-200 text-xs truncate mt-0.5 font-medium">
-                        {m.recommendedSku === "SKU-04820" ? "Junaid Jamshed Pure Cotton Embroidered Kurta White" : m.recommendedSku === "SKU-04825" ? "Traditional Handmade Leather Peshawari Chappal" : m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370" ? "Infinix Wireless Earbuds Active Noise Cancelling" : m.recommendedSku === "SKU-10492" ? "Gul Ahmed Festive Embroidered 3-Piece Lawn Suit" : m.recommendedSku === "SKU-00104" ? "Samsung Galaxy S24 Ultra Titanium" : m.recommendedSku === "SKU-05820" ? "Super Kernel Basmati Rice 5kg" : "Dawlance Inverter AC"}
+                        {m.recommendedSku === "PROD-00239" || m.recommendedSku === "SKU-00239" ? "Lenovo Laptops for Coding - AMOLED Collection Edition" : m.recommendedSku === "SKU-04820" ? "Junaid Jamshed Pure Cotton Embroidered Kurta White" : m.recommendedSku === "SKU-04825" ? "Traditional Handmade Leather Peshawari Chappal" : m.recommendedSku === "PROD-00370" || m.recommendedSku === "SKU-00370" ? "Infinix Wireless Earbuds Active Noise Cancelling" : m.recommendedSku === "SKU-10492" ? "Gul Ahmed Festive Embroidered 3-Piece Lawn Suit" : m.recommendedSku === "SKU-00104" ? "Samsung Galaxy S24 Ultra Titanium" : m.recommendedSku === "SKU-05820" ? "Super Kernel Basmati Rice 5kg" : "Dawlance Inverter AC"}
                       </div>
                       <div className="flex items-center space-x-2 mt-2">
                         <button

@@ -214,10 +214,18 @@ class ShopKaroHybridSearch:
         # 2. Semantic Cosine scoring
         query_vec = self.vectorizer.transform([expanded_query_str])
         semantic_scores = cosine_similarity(query_vec, self.doc_vectors).flatten()
+
+        # Check maximum relevance across both keyword and semantic retrieval
+        max_relevance = max(float(np.max(bm25_scores)), float(np.max(semantic_scores)))
+        if max_relevance <= 0.0:
+            return [], parsed
         
-        # Select top 120 candidates from both to have ample pool
-        top_bm25_indices = np.argsort(bm25_scores)[::-1][:120]
-        top_semantic_indices = np.argsort(semantic_scores)[::-1][:120]
+        # Select top candidates that have positive relevance
+        valid_bm25 = np.where(bm25_scores > 0)[0]
+        valid_semantic = np.where(semantic_scores > 0)[0]
+
+        top_bm25_indices = valid_bm25[np.argsort(bm25_scores[valid_bm25])[::-1][:120]] if len(valid_bm25) > 0 else []
+        top_semantic_indices = valid_semantic[np.argsort(semantic_scores[valid_semantic])[::-1][:120]] if len(valid_semantic) > 0 else []
         
         # 3. Reciprocal Rank Fusion (RRF)
         rrf_scores = defaultdict(float)
@@ -648,7 +656,8 @@ class ShopKaroAssistant:
         else:
             return {
                 "tool_called": "search_products",
-                "reply": "Maaf kijiye ga, is waqt is budget ya criteria mein koi matching item dastiyab nahi mila. Barah-e-karam apna search query thora tabdeel kijiye.",
+                "recommended_sku": None,
+                "reply": "Maaf kijiye, yeh product mere database / catalog mein mojood nahi hai.\n\nLekin ShopKaro verified Pakistani catalog mein yeh categories aur top options dastiyab hain:\n\n1. **Laptops & Tech**: Laptops for Coding (Lenovo, HP), Samsung Galaxy S24 Ultra, Infinix Wireless ANC Earbuds\n2. **Men's Fashion**: Junaid Jamshed Pure Cotton Embroidered Kurta (Rs. 4,990), Handmade Leather Peshawari Chappal (Rs. 3,200)\n3. **Women's Fashion**: Gul Ahmed Festive Embroidered 3-Piece Lawn Suit (Rs. 6,490)\n4. **Home & Appliances**: Dawlance 1.5 Ton Energy Saver Inverter AC (Rs. 145,000)\n5. **Groceries & Pantry**: Super Kernel Basmati Rice 5kg Export Quality (Rs. 2,190)\n\nAap in mein se kya dekhna chahein gay?",
                 "data": res
             }
 

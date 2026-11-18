@@ -88,6 +88,11 @@ export default function AssistantPage() {
 
         // Strict category-intent alignment for verified Pakistani catalog
         if (
+          lower.includes("laptop") || lower.includes("laptops") || lower.includes("notebook") ||
+          lower.includes("thinkpad") || lower.includes("macbook") || lower.includes("coding laptop")
+        ) {
+          recSku = "PROD-00239";
+        } else if (
           lower.includes("kurta") || lower.includes("kurti") || lower.includes("kurtas") ||
           lower.includes("mardana") || lower.includes("mens") || lower.includes("men kurta") ||
           lower.includes("shalwar") || lower.includes("kameez") || lower.includes("waistcoat") ||
@@ -265,10 +270,19 @@ export default function AssistantPage() {
           tool = { name: "search_products()", args: { query: text, category: "Fashion", subcategory: "Lawn Suits" }, result: "Found SKU-10492 · Gul Ahmed Festive Lawn Suit · Rs. 6,490 · 4.8★" };
           recSku = "SKU-10492";
         }
-        // 13. Generic search fallback
+        // 13. Laptops for Coding
+        else if (
+          lower.includes("laptop") || lower.includes("laptops") || lower.includes("notebook") ||
+          lower.includes("thinkpad") || lower.includes("macbook") || lower.includes("coding laptop")
+        ) {
+          reply = "Yeh lijiye! ShopKaro catalog se Lenovo Laptops for Coding (PROD-00239) behtareen choice hai. Fast performance, crisp AMOLED display aur price sirf Rs. 38,690 hai. Stock mein verified 59 units dastiyab hain. Iske ilawa HP Laptops for Coding (Rs. 49,290) bhi available hain.";
+          tool = { name: "search_products()", args: { query: text, category: "Electronics", subcategory: "Laptops for Coding" }, result: "Found PROD-00239 · Lenovo Laptops for Coding · Rs. 38,690 · 4.8★" };
+          recSku = "PROD-00239";
+        }
+        // 14. Product Not In Database Fallback
         else {
-          reply = "Aap ke bataye gaye criteria ke mutabiq ShopKaro Two-Tower neural engine ne verified Pakistani catalog se top matches search kar liye hain. Kisi specific category maslan Men's Kurta, Women's Lawn, Earbuds ya Electronics ka naam batayein taakay exact item recommend ho sakay.";
-          tool = { name: "search_products()", args: { query: text }, result: "Catalog query processed · Ready for category refinement" };
+          reply = "Maaf kijiye, yeh product mere database / catalog mein mojood nahi hai.\n\nLekin ShopKaro verified Pakistani catalog mein yeh categories aur top options dastiyab hain:\n\n1. **Laptops & Tech**: Laptops for Coding (Lenovo, HP), Samsung Galaxy S24 Ultra, Infinix Wireless ANC Earbuds\n2. **Men's Fashion**: Junaid Jamshed Pure Cotton Embroidered Kurta (Rs. 4,990), Handmade Leather Peshawari Chappal (Rs. 3,200)\n3. **Women's Fashion**: Gul Ahmed Festive Embroidered 3-Piece Lawn Suit (Rs. 6,490)\n4. **Home & Appliances**: Dawlance 1.5 Ton Energy Saver Inverter AC (Rs. 145,000)\n5. **Groceries & Pantry**: Super Kernel Basmati Rice 5kg Export Quality (Rs. 2,190)\n\nAap in mein se kya dekhna chahein gay?";
+          tool = { name: "search_products()", args: { query: text }, result: "Product not in database · Suggested available catalog options" };
           recSku = null;
         }
 
@@ -427,7 +441,9 @@ export default function AssistantPage() {
                                 {msg.recommendedSku} · Matched Recommendation
                               </span>
                               <span className="text-[11px] font-bold text-ink">
-                                {msg.recommendedSku === "SKU-04820"
+                                {msg.recommendedSku === "PROD-00239" || msg.recommendedSku === "SKU-00239"
+                                  ? "Rs. 38,690"
+                                  : msg.recommendedSku === "SKU-04820"
                                   ? "Rs. 4,990"
                                   : msg.recommendedSku === "SKU-04825"
                                   ? "Rs. 3,200"
@@ -445,7 +461,9 @@ export default function AssistantPage() {
                               </span>
                             </div>
                             <div className="text-xs font-medium text-ink truncate">
-                              {msg.recommendedSku === "SKU-04820"
+                              {msg.recommendedSku === "PROD-00239" || msg.recommendedSku === "SKU-00239"
+                                ? "Lenovo Laptops for Coding - AMOLED Collection Edition"
+                                : msg.recommendedSku === "SKU-04820"
                                 ? "Junaid Jamshed Pure Cotton Embroidered Kurta White"
                                 : msg.recommendedSku === "SKU-04825"
                                 ? "Traditional Leather Peshawari Chappal Black"
