@@ -30,6 +30,8 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 
 # Roman Urdu to Standard Commerce Term Normalization Dictionary
 ROMAN_URDU_SYNONYMS = {
+    "laptop": ["laptops", "laptop", "computer", "notebook"],
+    "laptops": ["laptops", "laptop", "computer", "notebook"],
     "kurta": ["kurta", "men kurta", "shalwar kameez", "kurtas", "clothing"],
     "kurtas": ["kurta", "men kurta", "shalwar kameez", "kurtas", "clothing"],
     "kurti": ["kurti", "kurta", "women kurta", "clothing"],
